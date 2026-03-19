@@ -45,7 +45,7 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
     data.appearance.theme === "light" ? "light" : "dark",
   );
   const [sceneSize, setSceneSize] = useState({ width: 400, height: 240 });
-  const [fullHeight, setFullHeight] = useState(560);
+  const [fullHeight, setFullHeight] = useState(0);
   const stretchedRef = useRef<HTMLDivElement | null>(null);
   const stretchedFrontRef = useRef<HTMLDivElement | null>(null);
   const stretchedBackRef = useRef<HTMLDivElement | null>(null);
@@ -352,13 +352,9 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
           style={{
             ...cardStyle,
             width: fullWidth,
-            height: fullHeight,
-            maxHeight: "calc(100vh - 200px)",
-            overflowY: "auto",
+            height: fullHeight || "auto",
             perspective: 1200,
             flexShrink: 0,
-            msOverflowStyle: "none",
-            scrollbarWidth: "none",
           }}
           role="button"
           tabIndex={0}
@@ -413,6 +409,7 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
                 background: "#0d1117",
                 border: "0.5px solid rgba(255,255,255,0.08)",
                 boxSizing: "border-box",
+                boxShadow: "0 0 0 0.5px rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.4), 0 0 60px rgba(99,102,241,0.04)",
               }}
             >
               <div ref={stretchedFrontRef} style={{ width: "100%", padding: "16px 18px 18px", boxSizing: "border-box" }}>
@@ -433,6 +430,7 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
                 background: "#08090e",
                 border: "0.5px solid rgba(255,255,255,0.06)",
                 boxSizing: "border-box",
+                boxShadow: "0 0 0 0.5px rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.4), 0 0 60px rgba(167,139,250,0.03)",
               }}
             >
               <div ref={stretchedBackRef} style={{ width: "100%", padding: "16px 18px 18px", boxSizing: "border-box" }}>
@@ -543,6 +541,8 @@ function StretchedFrontContent({
   const experience = buildExperienceTimeline(data);
   const initials = getInitials(data.profile.displayName);
   const linkedInHandle = (data.profile.linkedinUrl ?? "linkedin").replace("https://www.linkedin.com/in/", "");
+  const monoFont = "var(--font-space-mono)";
+  const groteskFont = "var(--font-space-grotesk)";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
@@ -553,8 +553,8 @@ function StretchedFrontContent({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
-              fontFamily: "var(--font-space-grotesk)",
-              fontSize: 18,
+              fontFamily: groteskFont,
+              fontSize: 17,
               fontWeight: 700,
               color: "#f0f4ff",
               letterSpacing: "-0.02em",
@@ -566,9 +566,9 @@ function StretchedFrontContent({
           </div>
           <div
             style={{
-              fontFamily: "var(--font-space-mono)",
+              fontFamily: monoFont,
               fontSize: 10,
-              color: "#3d5570",
+              color: "rgba(255,255,255,0.3)",
               letterSpacing: "0.04em",
               lineHeight: 1.4,
               whiteSpace: "nowrap",
@@ -588,9 +588,9 @@ function StretchedFrontContent({
               background: "rgba(10,102,194,0.08)",
               border: "0.5px solid rgba(10,102,194,0.22)",
               borderRadius: 20,
-              padding: "3px 10px",
+              padding: "2px 9px",
               marginTop: 5,
-              fontFamily: "var(--font-space-mono)",
+              fontFamily: monoFont,
               fontSize: 9,
               color: "#3d6a8a",
               letterSpacing: "0.04em",
@@ -614,12 +614,12 @@ function StretchedFrontContent({
               flexShrink: 0,
               background: "rgba(255,255,255,.06)",
               border: "0.5px solid rgba(255,255,255,.12)",
-              borderRadius: 20,
+              borderRadius: 6,
               padding: "5px 12px",
-              fontFamily: "var(--font-space-mono)",
+              fontFamily: monoFont,
               fontSize: 9,
               color: "rgba(255,255,255,.45)",
-              letterSpacing: "0.06em",
+              letterSpacing: "0.08em",
               textDecoration: "none",
               whiteSpace: "nowrap",
             }}
@@ -632,7 +632,7 @@ function StretchedFrontContent({
       <div style={{ height: "0.5px", background: "rgba(255,255,255,.07)", marginBottom: 12 }} />
       <div
         style={{
-          fontFamily: "var(--font-space-grotesk)",
+          fontFamily: groteskFont,
           fontWeight: 300,
           fontSize: 11,
           color: "rgba(255,255,255,0.38)",
@@ -647,7 +647,7 @@ function StretchedFrontContent({
 
       <div
         style={{
-          fontFamily: "var(--font-space-mono)",
+          fontFamily: monoFont,
           fontSize: 8,
           letterSpacing: "0.2em",
           color: "rgba(255,255,255,.15)",
@@ -685,7 +685,7 @@ function StretchedFrontContent({
                 <div>
                   <div
                     style={{
-                      fontFamily: "var(--font-space-grotesk)",
+                      fontFamily: groteskFont,
                       fontSize: 12,
                       fontWeight: 600,
                       color: "#d4e4f7",
@@ -696,7 +696,7 @@ function StretchedFrontContent({
                   </div>
                   <div
                     style={{
-                      fontFamily: "var(--font-space-mono)",
+                      fontFamily: monoFont,
                       fontSize: 10,
                       color: "#f89f1b",
                       letterSpacing: "0.03em",
@@ -708,7 +708,7 @@ function StretchedFrontContent({
                 </div>
                 <div
                   style={{
-                    fontFamily: "var(--font-space-mono)",
+                    fontFamily: monoFont,
                     fontSize: 9,
                     color: "rgba(255,255,255,.2)",
                     letterSpacing: "0.06em",
@@ -719,19 +719,20 @@ function StretchedFrontContent({
                   {exp.duration}
                 </div>
               </div>
-              {exp.description ? (
+              {exp.description && exp.description !== data.profile.bio ? (
                 <div
                   style={{
-                    fontFamily: "var(--font-space-grotesk)",
+                    fontFamily: groteskFont,
                     fontWeight: 300,
                     fontSize: 10,
-                    color: "rgba(255,255,255,.28)",
-                    lineHeight: 1.7,
+                    color: "rgba(255,255,255,0.25)",
+                    lineHeight: 1.6,
                     marginTop: 5,
                     maxWidth: 500,
                   }}
                 >
-                  {exp.description}
+                  {exp.description.slice(0, 120)}
+                  {exp.description.length > 120 ? "..." : ""}
                 </div>
               ) : null}
             </div>
@@ -739,9 +740,18 @@ function StretchedFrontContent({
         ))}
       </div>
 
-      <div style={{ height: "0.5px", background: "rgba(255,255,255,0.05)", margin: "14px 0 12px" }} />
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderTop: "0.5px solid rgba(255,255,255,0.06)",
+          paddingTop: 12,
+          marginTop: 14,
+          gap: 12,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
           <div
             style={{
               width: 20,
@@ -759,10 +769,10 @@ function StretchedFrontContent({
           <div>
             <div
               style={{
-                fontFamily: "var(--font-space-mono)",
+                fontFamily: monoFont,
                 fontSize: 10,
                 fontWeight: 700,
-                color: "rgba(255,255,255,0.45)",
+                color: "rgba(255,255,255,0.4)",
                 letterSpacing: "0.06em",
                 lineHeight: 1,
               }}
@@ -771,11 +781,11 @@ function StretchedFrontContent({
             </div>
             <div
               style={{
-                fontFamily: "var(--font-space-mono)",
+                fontFamily: monoFont,
                 fontSize: 7,
-                color: "rgba(255,255,255,0.18)",
-                letterSpacing: "0.1em",
-                marginTop: 1,
+                color: "rgba(255,255,255,0.15)",
+                letterSpacing: "0.08em",
+                marginTop: 1.5,
               }}
             >
               dev identity card
@@ -785,27 +795,40 @@ function StretchedFrontContent({
 
         <div
           style={{
+            fontFamily: monoFont,
+            fontSize: 8.5,
+            color: "rgba(255,255,255,0.15)",
+            letterSpacing: "0.06em",
+            flex: 1,
+            textAlign: "center",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          btouch.dev/{handle}
+        </div>
+
+        <div
+          style={{
             display: "flex",
             alignItems: "center",
-            gap: 6,
+            gap: 5,
             background: "rgba(99,102,241,0.08)",
-            border: "0.5px solid rgba(99,102,241,0.2)",
-            borderRadius: 20,
-            padding: "5px 12px",
-            fontFamily: "var(--font-space-mono)",
+            border: "0.5px solid rgba(99,102,241,0.25)",
+            borderRadius: 6,
+            padding: "5px 11px",
+            fontFamily: monoFont,
             fontSize: 9,
-            color: "rgba(165,180,252,0.6)",
+            color: "rgba(165,180,252,0.65)",
             letterSpacing: "0.08em",
             whiteSpace: "nowrap",
+            flexShrink: 0,
           }}
         >
           <span>↻</span>
           tap to flip
         </div>
-      </div>
-
-      <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 8, color: "rgba(255,255,255,0.15)", letterSpacing: "0.1em", marginTop: 10 }}>
-        btouch.dev/{handle}
       </div>
     </div>
   );
@@ -866,16 +889,18 @@ function StretchedBackContent({ data }: { data: CardData }) {
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "stretch" }}>
         <div
           style={{
             flex: 1,
+            minHeight: 80,
             borderRadius: 10,
-            padding: "10px 12px",
+            padding: "12px 14px",
             background: "rgba(255,255,255,.025)",
             border: "0.5px solid rgba(255,255,255,.07)",
             display: "flex",
             alignItems: "center",
+            justifyContent: "space-between",
             gap: 10,
           }}
         >
@@ -890,10 +915,14 @@ function StretchedBackContent({ data }: { data: CardData }) {
         <div
           style={{
             flex: 1,
+            minHeight: 80,
             borderRadius: 10,
-            padding: "10px 12px",
+            padding: "12px 14px",
             background: "rgba(255,255,255,.025)",
             border: "0.5px solid rgba(255,255,255,.07)",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
           }}
         >
           <div style={{ fontFamily: monoFont, fontSize: 8, letterSpacing: "0.12em", color: "rgba(248,159,27,.45)", marginBottom: 3 }}>
@@ -927,16 +956,17 @@ function StretchedBackContent({ data }: { data: CardData }) {
               }}
               style={{
                 fontFamily: monoFont,
-                fontSize: 8,
+                fontSize: 8.5,
                 letterSpacing: "0.1em",
-                padding: "4px 10px",
-                borderRadius: 20,
+                padding: "4px 12px",
+                borderRadius: 6,
                 border: "0.5px solid",
                 cursor: "pointer",
                 transition: "all 0.2s",
-                background: activePlatform === platform ? `rgba(${stats.platformConfig[platform].rgb},0.15)` : "transparent",
-                borderColor: activePlatform === platform ? `rgba(${stats.platformConfig[platform].rgb},0.4)` : "rgba(255,255,255,0.08)",
-                color: activePlatform === platform ? stats.platformConfig[platform].color : "rgba(255,255,255,0.25)",
+                background: activePlatform === platform ? `rgba(${stats.platformConfig[platform].rgb},0.12)` : "transparent",
+                borderColor: activePlatform === platform ? `rgba(${stats.platformConfig[platform].rgb},0.35)` : "rgba(255,255,255,0.08)",
+                color: activePlatform === platform ? stats.platformConfig[platform].color : "rgba(255,255,255,0.22)",
+                borderLeft: activePlatform === platform ? `2px solid ${stats.platformConfig[platform].color}` : "0.5px solid rgba(255,255,255,0.08)",
               }}
             >
               {platform === "all" ? "all" : platform}
@@ -951,14 +981,23 @@ function StretchedBackContent({ data }: { data: CardData }) {
           <div style={{ fontFamily: monoFont, fontSize: 8, color: "rgba(255,255,255,0.2)" }}>last 91 days</div>
         </div>
 
-        <div style={{ fontFamily: monoFont, fontSize: 8, color: "rgba(255,255,255,0.25)", letterSpacing: "0.06em", marginBottom: 8 }}>
-          <span style={{ color: active.color, fontWeight: 700 }}>{totalContribs}</span>
-          {" "}contributions in 91 days · <span style={{ color: active.color }}>{activeDays}</span>
-          {" "}active days · peak {maxDay.count} on {maxDay.date}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontFamily: monoFont, fontSize: 8.5, color: "rgba(255,255,255,0.22)", letterSpacing: "0.04em", lineHeight: 1.7 }}>
+            <span style={{ color: active.color, fontWeight: 700 }}>{totalContribs}</span>
+            {" contributions · "}
+            <span style={{ color: active.color }}>{activeDays}</span>
+            {" active days"}
+          </div>
+          <div style={{ fontFamily: monoFont, fontSize: 8.5, color: "rgba(255,255,255,0.18)", letterSpacing: "0.04em" }}>
+            {"peak "}
+            <span style={{ color: active.color }}>{maxDay.count}</span>
+            {" contributions on "}
+            {maxDay.date}
+          </div>
         </div>
 
         <div style={{ position: "relative" }}>
-          <div key={activePlatform} className="heatmap-grid" style={{ display: "grid", gridTemplateColumns: "repeat(13, 1fr)", gap: 3, animation: "heatmapFade 0.3s ease-out" }}>
+          <div key={activePlatform} className="heatmap-grid" style={{ display: "grid", gridTemplateColumns: "repeat(13, 1fr)", gap: 2.5, width: "100%", animation: "heatmapFade 0.3s ease-out" }}>
             {active.data.map((day, index) => {
               const intensity = maxCount > 0 ? day.count / maxCount : 0;
               const opacity = day.count === 0 ? 0.07 : 0.2 + intensity * 0.8;
@@ -973,11 +1012,13 @@ function StretchedBackContent({ data }: { data: CardData }) {
                   onMouseLeave={() => setHoveredDot(null)}
                   onClick={(event) => event.stopPropagation()}
                   style={{
-                    aspectRatio: "1",
-                    borderRadius: 2,
+                    aspectRatio: "1 / 1",
+                    width: "100%",
+                    height: "auto",
+                    borderRadius: 1.5,
                     background: `rgba(${active.rgb},${opacity.toFixed(2)})`,
                     cursor: day.count > 0 ? "pointer" : "default",
-                    transition: "background 0.3s, transform 0.1s",
+                    transition: "transform 0.1s, outline 0.1s",
                     transform: hoveredDot?.index === index ? "scale(1.3)" : "scale(1)",
                     outline: hoveredDot?.index === index ? `1px solid rgba(${active.rgb},0.6)` : "none",
                   }}
@@ -990,24 +1031,38 @@ function StretchedBackContent({ data }: { data: CardData }) {
             <div
               style={{
                 position: "absolute",
-                bottom: "calc(100% + 8px)",
-                left: `${((hoveredDot.index % 13) + 0.5) * (100 / 13)}%`,
-                transform: "translateX(-40%)",
+                bottom: "calc(100% + 6px)",
+                left: `${Math.min(Math.max((hoveredDot.index % 13) * (100 / 13), 8), 80)}%`,
+                transform: "translateX(-50%)",
                 background: "#1a1f2e",
-                border: `0.5px solid rgba(${active.rgb},0.3)`,
+                border: `0.5px solid rgba(${active.rgb},0.35)`,
                 borderRadius: 6,
                 padding: "6px 10px",
                 whiteSpace: "nowrap",
-                zIndex: 10,
+                zIndex: 20,
                 pointerEvents: "none",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
               }}
             >
-              <div style={{ fontFamily: monoFont, fontSize: 8, color: active.color, letterSpacing: "0.06em", marginBottom: 2 }}>
+              <div style={{ fontFamily: monoFont, fontSize: 8.5, color: `rgba(${active.rgb},0.7)`, letterSpacing: "0.06em", marginBottom: 3 }}>
                 {hoveredDot.date}
               </div>
-              <div style={{ fontFamily: groteskFont, fontSize: 12, fontWeight: 700, color: "#f0f4ff" }}>
+              <div style={{ fontFamily: groteskFont, fontSize: 14, fontWeight: 700, color: "#f0f4ff", lineHeight: 1 }}>
                 {hoveredDot.count > 0 ? `${hoveredDot.count} contribution${hoveredDot.count > 1 ? "s" : ""}` : "no activity"}
               </div>
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: -4,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: 0,
+                  height: 0,
+                  borderLeft: "4px solid transparent",
+                  borderRight: "4px solid transparent",
+                  borderTop: `4px solid rgba(${active.rgb},0.35)`,
+                }}
+              />
             </div>
           ) : null}
         </div>
@@ -1119,7 +1174,7 @@ function buildExperienceTimeline(data: CardData) {
       role,
       company,
       duration: "Now",
-      description: data.profile.bio || "Currently building developer-facing interfaces and systems.",
+      description: "Currently building developer-facing interfaces and systems.",
     },
     {
       role: "Builder",

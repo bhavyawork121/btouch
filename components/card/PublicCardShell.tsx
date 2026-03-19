@@ -64,7 +64,7 @@ export function PublicCardShell({ initialData, shareUrl, username }: PublicCardS
 
   return (
     <main
-      className="mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center gap-8 px-6 py-12"
+      className="page-bg flex min-h-screen w-full flex-col items-center justify-center gap-8 px-6 py-12"
       style={{ color: surface.foreground }}
     >
       <div
