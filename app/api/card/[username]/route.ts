@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCardDataByUsername } from "@/lib/card-service";
-import { connectDB } from "@/lib/mongodb";
 import { rateLimitRequest } from "@/lib/rateLimit";
 import type { PlatformName } from "@/types/card";
 
@@ -26,7 +25,6 @@ function getClientIp(request: Request) {
 }
 
 export async function GET(request: Request, { params }: { params: { username: string } }) {
-  await connectDB();
   const parsed = paramsSchema.safeParse(params);
   const searchParsed = searchSchema.safeParse({
     refreshPlatform: new URL(request.url).searchParams.get("refreshPlatform") ?? undefined,

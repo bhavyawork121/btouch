@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String       @id @default(cuid())
+  githubId      String       @unique
+  email         String       @unique
+  name          String
+  image         String?      @default("")
+  avatarUrl     String       @default("")
+  username      String       @unique
+  emailVerified DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  card          CardConfig?
+  accounts      Account[]
+  sessions      Session[]
+  authenticators Authenticator[]
+  refreshLogs   RefreshLog[]
+}
+
+model CardConfig {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  username  String   @unique
+
+  linkedinUrl    String   @default("")
+  displayName    String   @default("")
+  headline       String   @default("")
+  bio            String   @default("")
+  avatarUrl      String   @default("")
+  currentRole    String   @default("")
+  currentCompany String   @default("")
+  location       String   @default("")
+  openToWork     Boolean  @default(false)
+  skills         String[]  @default([])
+
+  githubHandle   String   @default("")
+  leetcodeHandle String   @default("")
+  cfHandle       String   @default("")
+  gfgHandle      String   @default("")
+
+  githubData      Json?
+  githubCachedAt  DateTime?
+  leetcodeData    Json?
+  leetcodeCachedAt DateTime?
+  cfData          Json?
+  cfCachedAt      DateTime?
+  gfgData         Json?
+  gfgCachedAt     DateTime?
+  linkedinData    Json?
+  linkedinCachedAt DateTime?
+
+  experience Json[] @default([])
+
+  theme         String   @default("dark")
+  accentColor   String   @default("indigo")
+  showPlatforms String[] @default(["github", "leetcode", "codeforces", "gfg"])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([username])
+}
+
+model RefreshLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  username   String
+  platform   String
+  status     String
+  durationMs Int
+  createdAt  DateTime @default(now())
+
+  @@index([username])
+  @@index([createdAt])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Authenticator {
+  id                   String  @id @default(cuid())
+  credentialID         String  @unique
+  userId               String
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String[]
+  user                 User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, credentialID])
+}

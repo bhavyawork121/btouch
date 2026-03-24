@@ -9,6 +9,13 @@ interface PlatformStatsBase {
   error?: string;
 }
 
+export interface ExperienceEntry {
+  role: string;
+  company: string;
+  duration: string | null;
+  description: string | null;
+}
+
 export interface GitHubStats extends PlatformStatsBase {
   followers: number;
   publicRepos: number;
@@ -58,13 +65,17 @@ export interface CardData {
     accentColor: string;
   };
   profile: {
-    displayName: string;
-    headline: string;
-    bio: string;
+    displayName: string | null;
+    headline: string | null;
+    bio: string | null;
     avatarUrl: string | null;
     linkedinUrl: string | null;
     currentRole: string | null;
     currentCompany: string | null;
+    location?: string | null;
+    skills?: string[];
+    openToWork?: boolean;
+    experience?: ExperienceEntry[];
   };
   stats: {
     github: GitHubStats | null;
@@ -72,9 +83,15 @@ export interface CardData {
     codeforces: CodeforcesStats | null;
     gfg: GFGStats | null;
   };
+  config: {
+    showPlatforms: PlatformName[];
+    theme: CardTheme;
+    accentColor: string;
+    username: string;
+  };
   meta: {
     lastRefreshed: string;
-    stalePlatforms: string[];
+    stalePlatforms: PlatformName[];
   };
 }
 

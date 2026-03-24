@@ -25,5 +25,5 @@ export const cardConfigFormSchema = z.object({
   cfHandle: nullableString,
   gfgHandle: nullableString,
   theme: z.enum(["dark", "light", "auto"]),
-  accentColor: z.enum(accentOptions),
+  accentColor: z.enum(accentOptions as [string, ...string[]]),
 });

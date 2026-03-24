@@ -1,26 +1,25 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { clearAllCaches } from "@/lib/dbCache";
-import { connectDB } from "@/lib/mongodb";
-import { CardConfig } from "@/lib/models/CardConfig";
-import { User } from "@/lib/models/User";
+import { prisma } from "@/lib/prisma";
 
 export async function POST() {
-  await connectDB();
   const session = await auth();
 
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await User.findOne({ email: session.user.email }).lean();
-  const config = user ? await CardConfig.findOne({ userId: user._id }).lean() : null;
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    include: { card: true },
+  });
 
-  if (!config) {
+  if (!user?.card) {
     return NextResponse.json({ error: "Card configuration not found" }, { status: 404 });
   }
 
-  await clearAllCaches(config.username);
+  await clearAllCaches(user.card.username);
 
-  return NextResponse.json({ ok: true, username: config.username });
+  return NextResponse.json({ ok: true, username: user.card.username });
 }

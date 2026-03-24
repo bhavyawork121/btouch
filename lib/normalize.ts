@@ -1,29 +1,79 @@
-import type {
-  CardData,
-  CardTheme,
-  CardStats,
-  CodeforcesStats,
-  GFGStats,
-  GitHubStats,
-  LeetCodeStats,
-  PlatformName,
-  PlatformStatSummary,
-} from "@/types/card";
+import type { CardData, CardStats, ExperienceEntry, PlatformName, PlatformStatSummary } from "@/types/card";
 
-export function createEmptyCardData(username = "preview"): CardData {
+type CardConfigLike = {
+  username: string;
+  theme: string;
+  accentColor: string;
+  showPlatforms?: string[];
+  displayName?: string | null;
+  headline?: string | null;
+  bio?: string | null;
+  avatarUrl?: string | null;
+  linkedinUrl?: string | null;
+  currentRole?: string | null;
+  currentCompany?: string | null;
+  location?: string | null;
+  openToWork?: boolean | null;
+  skills?: string[] | null;
+  experience?: unknown;
+};
+
+function asText(value: unknown) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+}
+
+function asExperience(value: unknown): ExperienceEntry[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+
+      const item = entry as Record<string, unknown>;
+      const role = asText(item.role);
+      const company = asText(item.company);
+
+      if (!role || !company) {
+        return null;
+      }
+
+      return {
+        role,
+        company,
+        duration: asText(item.duration),
+        description: asText(item.description),
+      };
+    })
+    .filter((entry): entry is ExperienceEntry => Boolean(entry));
+}
+
+export function createEmptyCardData(username = ""): CardData {
   return {
     appearance: {
       theme: "dark",
       accentColor: "indigo",
     },
     profile: {
-      displayName: username,
-      headline: "Full-stack engineer",
-      bio: "Builds resilient systems, animated interfaces, and sensible product surfaces.",
+      displayName: null,
+      headline: null,
+      bio: null,
       avatarUrl: null,
       linkedinUrl: null,
-      currentRole: "Software Engineer",
-      currentCompany: "btouch",
+      currentRole: null,
+      currentCompany: null,
+      location: null,
+      skills: [],
+      openToWork: false,
+      experience: [],
     },
     stats: {
       github: null,
@@ -31,76 +81,12 @@ export function createEmptyCardData(username = "preview"): CardData {
       codeforces: null,
       gfg: null,
     },
-    meta: {
-      lastRefreshed: new Date().toISOString(),
-      stalePlatforms: [],
-    },
-  };
-}
-
-export function buildPreviewCardData(): CardData {
-  return {
-    appearance: {
+    config: {
+      username,
+      showPlatforms: ["github", "leetcode", "codeforces", "gfg"],
       theme: "dark",
       accentColor: "indigo",
     },
-    profile: {
-      displayName: "Rahul Sharma",
-      headline: "Senior Frontend Engineer building expressive product systems",
-      bio: "I design interfaces with measurable motion, clean data boundaries, and enough discipline to stay maintainable.",
-      avatarUrl: null,
-      linkedinUrl: "https://www.linkedin.com/in/rahul-sharma",
-      currentRole: "Staff Engineer",
-      currentCompany: "Arc Foundry",
-    },
-    stats: {
-      github: {
-        status: "ok",
-        handle: "rahul-s",
-        followers: 824,
-        publicRepos: 62,
-        stars: 1380,
-        contributionsLastYear: 924,
-        topLanguages: ["TypeScript", "Go", "Rust"],
-        heatmap: Array.from({ length: 56 }, (_, index) => index % 5),
-        profileUrl: "https://github.com/rahul-s",
-        avatarUrl: null,
-        bio: null,
-        fetchedAt: new Date().toISOString(),
-      },
-      leetcode: {
-        status: "ok",
-        handle: "rahul-s",
-        solved: { easy: 214, medium: 388, hard: 92, total: 694 },
-        ranking: 14567,
-        acceptanceRate: 68,
-        streak: 47,
-        percentile: 93,
-        badge: "gold",
-        avatarUrl: null,
-        fetchedAt: new Date().toISOString(),
-      },
-      codeforces: {
-        status: "ok",
-        handle: "rahul_s",
-        rating: 1764,
-        maxRating: 1880,
-        rank: "expert",
-        maxRank: "candidate master",
-        contribution: 28,
-        avatarUrl: null,
-        fetchedAt: new Date().toISOString(),
-      },
-      gfg: {
-        status: "ok",
-        handle: "rahuls",
-        score: 1742,
-        streak: 23,
-        solved: 511,
-        instituteRank: "24",
-        fetchedAt: new Date().toISOString(),
-      },
-    },
     meta: {
       lastRefreshed: new Date().toISOString(),
       stalePlatforms: [],
@@ -108,28 +94,44 @@ export function buildPreviewCardData(): CardData {
   };
 }
 
-export function normalizeCardData(input: {
-  appearance?: {
-    theme?: CardTheme;
-    accentColor?: string;
-  };
-  profile: CardData["profile"];
-  stats: CardStats;
-}): CardData {
-  const stalePlatforms = (Object.entries(input.stats) as [PlatformName, GitHubStats | LeetCodeStats | CodeforcesStats | GFGStats | null][])
-    .filter(([, value]) => value?.status === "stale" || value?.status === "error")
-    .map(([platform]) => platform);
+export function normalizeCard(card: CardConfigLike, platformResults: Partial<CardStats>): CardData {
+  const showPlatforms = (card.showPlatforms ?? ["github", "leetcode", "codeforces", "gfg"]).filter(
+    (platform): platform is PlatformName => platform === "github" || platform === "leetcode" || platform === "codeforces" || platform === "gfg",
+  );
 
   return {
     appearance: {
-      theme: input.appearance?.theme ?? "dark",
-      accentColor: input.appearance?.accentColor ?? "indigo",
+      theme: card.theme === "light" || card.theme === "auto" ? card.theme : "dark",
+      accentColor: card.accentColor || "indigo",
     },
-    profile: input.profile,
-    stats: input.stats,
+    profile: {
+      displayName: asText(card.displayName) ?? card.username,
+      headline: asText(card.headline),
+      bio: asText(card.bio),
+      avatarUrl: asText(card.avatarUrl),
+      linkedinUrl: asText(card.linkedinUrl),
+      currentRole: asText(card.currentRole),
+      currentCompany: asText(card.currentCompany),
+      location: asText(card.location),
+      skills: card.skills ?? [],
+      openToWork: Boolean(card.openToWork),
+      experience: asExperience(card.experience),
+    },
+    stats: {
+      github: platformResults.github ?? null,
+      leetcode: platformResults.leetcode ?? null,
+      codeforces: platformResults.codeforces ?? null,
+      gfg: platformResults.gfg ?? null,
+    },
+    config: {
+      username: card.username,
+      showPlatforms,
+      theme: card.theme === "light" || card.theme === "auto" ? card.theme : "dark",
+      accentColor: card.accentColor || "indigo",
+    },
     meta: {
       lastRefreshed: new Date().toISOString(),
-      stalePlatforms,
+      stalePlatforms: [],
     },
   };
 }
@@ -140,49 +142,29 @@ export function summarizeStats(stats: CardStats): PlatformStatSummary[] {
       platform: "github",
       status: stats.github?.status ?? "error",
       label: "followers",
-      value: stats.github?.status === "error" ? "Unavailable" : String(stats.github?.followers ?? 0),
-      detail:
-        stats.github?.status === "stale"
-          ? "Showing cached GitHub data"
-          : stats.github?.status === "error"
-            ? "GitHub sync failed"
-            : "Live GitHub signal",
+      value: stats.github?.status ? String(stats.github?.followers ?? "") : "",
+      detail: stats.github?.status ? "" : "",
     },
     {
       platform: "leetcode",
       status: stats.leetcode?.status ?? "error",
       label: "problems solved",
-      value: stats.leetcode?.status === "error" ? "Unavailable" : String(stats.leetcode?.solved.total ?? 0),
-      detail:
-        stats.leetcode?.status === "stale"
-          ? "Showing cached LeetCode data"
-          : stats.leetcode?.status === "error"
-            ? "LeetCode sync failed"
-            : "Live LeetCode signal",
+      value: stats.leetcode?.status ? String(stats.leetcode?.solved.total ?? "") : "",
+      detail: stats.leetcode?.status ? "" : "",
     },
     {
       platform: "codeforces",
       status: stats.codeforces?.status ?? "error",
       label: "current rating",
-      value: stats.codeforces?.status === "error" ? "Unavailable" : String(stats.codeforces?.rating ?? 0),
-      detail:
-        stats.codeforces?.status === "stale"
-          ? "Showing cached Codeforces data"
-          : stats.codeforces?.status === "error"
-            ? "Codeforces sync failed"
-            : "Live Codeforces signal",
+      value: stats.codeforces?.status ? String(stats.codeforces?.rating ?? "") : "",
+      detail: stats.codeforces?.status ? "" : "",
     },
     {
       platform: "gfg",
       status: stats.gfg?.status ?? "error",
       label: "practice score",
-      value: stats.gfg?.status === "error" ? "Unavailable" : String(stats.gfg?.score ?? 0),
-      detail:
-        stats.gfg?.status === "stale"
-          ? "Showing cached GFG data"
-          : stats.gfg?.status === "error"
-            ? "GFG sync failed"
-            : "Live GFG signal",
+      value: stats.gfg?.status ? String(stats.gfg?.score ?? "") : "",
+      detail: stats.gfg?.status ? "" : "",
     },
   ];
 }

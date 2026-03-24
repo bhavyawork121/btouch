@@ -1,8 +1,7 @@
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
-import { connectDB } from "@/lib/mongodb";
-import { CardConfig } from "@/lib/models/CardConfig";
-import { User } from "@/lib/models/User";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { prisma } from "@/lib/prisma";
 
 interface GitHubProfile {
   id: number | string;
@@ -10,6 +9,7 @@ interface GitHubProfile {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  adapter: PrismaAdapter(prisma),
   providers: [
     GitHub({
       clientId: process.env.GITHUB_CLIENT_ID!,
@@ -21,32 +21,42 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async signIn({ user, profile }) {
-      await connectDB();
-
       const githubProfile = profile as GitHubProfile;
       const githubId = String(githubProfile.id);
-      const username = githubProfile.login?.toLowerCase() ?? githubId;
+      const login = (githubProfile.login ?? "").toLowerCase();
 
-      const existing = await User.findOneAndUpdate(
-        { githubId },
-        {
+      const dbUser = await prisma.user.upsert({
+        where: { githubId },
+        update: {
+          email: user.email ?? "",
+          name: user.name ?? "",
+          image: user.image ?? "",
+          avatarUrl: user.image ?? "",
+          username: login || githubId,
+        },
+        create: {
           githubId,
           email: user.email ?? "",
           name: user.name ?? "",
+          image: user.image ?? "",
           avatarUrl: user.image ?? "",
-          username,
+          username: login || githubId,
         },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-      );
+      });
 
-      const hasCard = await CardConfig.exists({ userId: existing._id });
-      if (!hasCard) {
-        await CardConfig.create({
-          userId: existing._id,
-          username,
-          githubHandle: githubProfile.login ?? "",
-          displayName: user.name ?? "",
-          avatarUrl: user.image ?? "",
+      const existing = await prisma.cardConfig.findUnique({
+        where: { userId: dbUser.id },
+      });
+
+      if (!existing) {
+        await prisma.cardConfig.create({
+          data: {
+            userId: dbUser.id,
+            username: dbUser.username,
+            githubHandle: githubProfile.login ?? "",
+            displayName: user.name ?? "",
+            avatarUrl: user.image ?? "",
+          },
         });
       }
 
@@ -55,15 +65,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
     async session({ session, token }) {
       if (token?.sub) {
-        await connectDB();
-        const user = await User.findOne({ githubId: token.sub }).lean();
-        if (user && session.user) {
-          Object.assign(session.user, {
-            id: user._id.toString(),
-            username: user.username,
-          });
+        const dbUser = await prisma.user.findUnique({
+          where: { githubId: token.sub },
+          include: { card: true },
+        });
+
+        if (dbUser && session.user) {
+          const sessionUser = session.user as {
+            id?: string;
+            username?: string;
+            cardUsername?: string | null;
+          };
+          sessionUser.id = dbUser.id;
+          sessionUser.username = dbUser.username;
+          sessionUser.cardUsername = dbUser.card?.username ?? null;
         }
       }
+
       return session;
     },
 

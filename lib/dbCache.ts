@@ -1,77 +1,95 @@
-import { connectDB } from './mongodb'
-import { CardConfig } from './models/CardConfig'
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
+import type { PlatformName } from "@/types/card";
 
-const TTL_MS = {
+const TTL_MS: Record<PlatformName | "linkedin", number> = {
   github: 86400 * 1000,
   leetcode: 21600 * 1000,
   codeforces: 21600 * 1000,
   gfg: 43200 * 1000,
   linkedin: 604800 * 1000,
-} as const
+};
 
-type Platform = keyof typeof TTL_MS
+const CACHE_FIELD_MAP: Record<
+  PlatformName | "linkedin",
+  { dataField: string; timeField: string }
+> = {
+  github: { dataField: "githubData", timeField: "githubCachedAt" },
+  leetcode: { dataField: "leetcodeData", timeField: "leetcodeCachedAt" },
+  codeforces: { dataField: "cfData", timeField: "cfCachedAt" },
+  gfg: { dataField: "gfgData", timeField: "gfgCachedAt" },
+  linkedin: { dataField: "linkedinData", timeField: "linkedinCachedAt" },
+};
 
-const fieldMap: Record<Platform, string> = {
-  github: 'githubCache',
-  leetcode: 'leetcodeCache',
-  codeforces: 'cfCache',
-  gfg: 'gfgCache',
-  linkedin: 'linkedinCache',
+export async function getCachedPlatform<T>(username: string, platform: PlatformName): Promise<T | null> {
+  const fields = CACHE_FIELD_MAP[platform];
+  const card = await prisma.cardConfig.findUnique({
+    where: { username },
+    select: {
+      [fields.dataField]: true,
+      [fields.timeField]: true,
+    } as never,
+  });
+
+  if (!card) {
+    return null;
+  }
+
+  const data = (card as Record<string, unknown>)[fields.dataField] as T | null | undefined;
+  const cachedAt = (card as Record<string, unknown>)[fields.timeField] as Date | string | null | undefined;
+
+  if (!data || !cachedAt) {
+    return null;
+  }
+
+  const age = Date.now() - new Date(cachedAt).getTime();
+  if (age > TTL_MS[platform]) {
+    return null;
+  }
+
+  return data;
 }
 
-export async function getFromCache<T>(
-  username: string,
-  platform: Platform
-): Promise<T | null> {
-  await connectDB()
-  const card = await CardConfig
-    .findOne({ username })
-    .select(fieldMap[platform])
-    .lean()
-
-  if (!card) return null
-
-  const cache = ((card as unknown) as Record<string, { cachedAt?: Date | string | null; data?: T | null }>)[fieldMap[platform]]
-  if (!cache?.cachedAt || !cache?.data) return null
-
-  const age = Date.now() - new Date(cache.cachedAt).getTime()
-  if (age > TTL_MS[platform]) return null
-
-  return cache.data as T
+export async function savePlatformCache<T>(username: string, platform: PlatformName, data: T): Promise<void> {
+  const fields = CACHE_FIELD_MAP[platform];
+  await prisma.cardConfig.update({
+    where: { username },
+    data: {
+      [fields.dataField]: data,
+      [fields.timeField]: new Date(),
+    } as never,
+  });
 }
 
-export async function saveToCache<T>(
-  username: string,
-  platform: Platform,
-  data: T
-): Promise<void> {
-  await connectDB()
-  await CardConfig.updateOne(
-    { username },
-    { $set: { [fieldMap[platform]]: { data, cachedAt: new Date() } } }
-  )
-}
-
-export async function clearCache(username: string, platform: Platform): Promise<void> {
-  await connectDB()
-  await CardConfig.updateOne(
-    { username },
-    { $set: { [fieldMap[platform]]: { data: null, cachedAt: null } } }
-  )
+export async function clearPlatformCache(username: string, platform: PlatformName): Promise<void> {
+  const fields = CACHE_FIELD_MAP[platform];
+  await prisma.cardConfig.update({
+    where: { username },
+    data: {
+      [fields.dataField]: Prisma.DbNull,
+      [fields.timeField]: null,
+    } as never,
+  });
 }
 
 export async function clearAllCaches(username: string): Promise<void> {
-  await connectDB()
-  await CardConfig.updateOne(
-    { username },
-    {
-      $set: {
-        githubCache: { data: null, cachedAt: null },
-        leetcodeCache: { data: null, cachedAt: null },
-        cfCache: { data: null, cachedAt: null },
-        gfgCache: { data: null, cachedAt: null },
-        linkedinCache: { data: null, cachedAt: null },
-      },
-    }
-  )
+  await prisma.cardConfig.update({
+    where: { username },
+    data: {
+      githubData: Prisma.DbNull,
+      githubCachedAt: null,
+      leetcodeData: Prisma.DbNull,
+      leetcodeCachedAt: null,
+      cfData: Prisma.DbNull,
+      cfCachedAt: null,
+      gfgData: Prisma.DbNull,
+      gfgCachedAt: null,
+      linkedinData: Prisma.DbNull,
+      linkedinCachedAt: null,
+    },
+  });
 }
+
+export const getFromCache = getCachedPlatform;
+export const saveToCache = savePlatformCache;
+export const clearCache = clearPlatformCache;
