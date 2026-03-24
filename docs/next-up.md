@@ -1,32 +1,31 @@
 # Next Up
 
-Last updated: 2026-03-18
+Last updated: 2026-03-24
 
 ## Current priority order
 
-1. Verification and repo hygiene
-2. Data freshness and error recovery
-3. Dashboard completion
-4. Share/polish features
+1. Production deployment and environment wiring
+2. LinkedIn data import or sync
+3. Platform data refresh hardening
+4. UX polish and export improvements
 
 ## Immediate next tasks
 
-- Decide whether cache refresh should support per-platform refresh from the dashboard as well.
-- Add LinkedIn data import/hydration beyond manual entry.
-- Decide whether LinkedIn hydration should be true OAuth profile sync or a lighter server-side enrichment flow from stored URL/handle data.
+- Decide whether LinkedIn should stay manual-only or become an import/sync flow.
+- Wire production environment variables for Supabase, GitHub OAuth, and Redis.
+- Confirm the app works in a production host, not just local dev.
 
 ## Near-term engineering work
 
-- Improve rate limiting to separate identifiers per route family and preserve clearer retry metadata.
-- Decide whether platform cache should fall back to stale cached values when a fresh fetch fails.
-- Expand theme behavior from card surfaces to more of the surrounding app shell where appropriate.
+- Make refresh flows more explicit in the dashboard for individual platforms.
+- Tighten stale/error recovery so a failed fetch can optionally keep older cached data.
+- Expand the theme system across more of the surrounding shell if desired.
 
 ## Product gaps against the prompt
 
-- Expand the new theme system so more of the surrounding app shell responds to saved appearance settings.
-- Add OG image generation hardening and verify [`app/[username]/opengraph-image.tsx`](/Users/bhavya_agarwal/Desktop/btouch/app/%5Busername%5D/opengraph-image.tsx) output.
-- Add QR export/download behavior that exports the QR itself rather than only linking to the public page.
-- Evaluate LinkedIn profile import flow beyond manual entry so front-face data is less manual.
+- Add richer LinkedIn hydration so the front face is less manual.
+- Harden OG image generation and confirm the public preview rendering path.
+- Improve QR export so it can export the QR artifact directly if needed.
 
 ## Stretch work after stability
 

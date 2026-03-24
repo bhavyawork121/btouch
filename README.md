@@ -1,6 +1,6 @@
 # btouch
 
-Animated developer identity cards built with Next.js 14. A public card at `btouch.dev/username` shows a LinkedIn-style front face and live coding-platform stats on the back face.
+Animated developer identity cards built with Next.js 14. Public cards live at `btouch.dev/username` and show a LinkedIn-style front face plus live coding stats on the back face.
 
 ## Stack
 
@@ -10,26 +10,28 @@ Animated developer identity cards built with Next.js 14. A public card at `btouc
 - Framer Motion
 - TanStack Query
 - Auth.js / NextAuth v5 beta
-- MongoDB Atlas + Mongoose
+- Supabase Postgres + Prisma
 - Upstash Redis
 - Zod
 
 ## Current state
 
-The repo already contains:
+The repo currently includes:
 
-- Landing page with a live preview card
+- Landing page with onboarding credentials entry
+- `/demo` sample card route for the public flip-card preview
 - Public shareable card route
 - Auth-protected dashboard for editing profile and handles
-- Card aggregation service with per-platform fetchers
-- Redis cache wrapper and rate limiting
-- GitHub auth wiring
+- Prisma-backed data layer for users, cards, caches, and refresh logs
+- GitHub auth wiring with Prisma adapter
 - QR and copy-link share actions
+- Shared markdown tracking for completed work and next steps
 
 Track progress here:
 
 - [Work done](./docs/work-done.md)
 - [Next up](./docs/next-up.md)
+- [Static / hardcoded audit](./docs/static-hardcoded-features.md)
 
 ## Project structure
 
@@ -38,7 +40,7 @@ app/
 components/
 hooks/
 lib/
-lib/models/
+prisma/
 types/
 docs/
 ```
@@ -48,7 +50,10 @@ docs/
 Create `.env.local` with the following values:
 
 ```bash
-MONGODB_URI="mongodb+srv://btouch-admin:wRFYno1kuZXZOpDp@btouchluster.4phjh3n.mongodb.net/btouch?retryWrites=true&w=majority&appName=btouchluster"
+DATABASE_URL="postgresql://postgres.[ref]:[password]@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.[ref]:[password]@aws-1-ap-south-1.pooler.supabase.com:5432/postgres"
+NEXT_PUBLIC_SUPABASE_URL="https://ghseacduihpopturkzlj.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="replace-with-your-anon-key"
 
 UPSTASH_REDIS_REST_URL="https://..."
 UPSTASH_REDIS_REST_TOKEN="..."
@@ -70,6 +75,8 @@ You can start from [`.env.example`](/Users/bhavya_agarwal/Desktop/btouch/.env.ex
 
 ```bash
 npm install
+npx prisma generate
+npx prisma db push
 npm run dev
 ```
 
@@ -81,8 +88,9 @@ npm run build
 npm run lint
 ```
 
-## Implementation notes
+## Notes
 
 - Platform aggregation uses `Promise.allSettled()` so one provider failure does not break the card.
 - Cache writes are non-blocking and Redis failures degrade gracefully.
-- Card pages are server-rendered today; client refresh/error-retry work is still on the near-term roadmap.
+- The public demo card lives on `/demo`; the home page stays focused on onboarding and real card creation.
+- The app is built to work with live database data rather than hardcoded demo user records.
