@@ -43,6 +43,7 @@ export function CardBack({
   onScrollIndexChange?: (index: number) => void;
 }) {
   const summaries = summarizeStats(data.stats);
+  const hasStats = Boolean(data.stats.github || data.stats.leetcode || data.stats.codeforces || data.stats.gfg);
   const [heatmapReady, setHeatmapReady] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -86,12 +87,12 @@ export function CardBack({
     return () => scrollElement?.removeEventListener("scroll", handleScroll);
   }, [onScrollIndexChange]);
 
-  const streakValue = data.stats.leetcode?.streak ?? data.stats.gfg?.streak ?? 0;
-  const streak = useCountUp(streakValue, 800);
+  const streakValue = data.stats.leetcode?.streak ?? data.stats.gfg?.streak ?? null;
+  const streak = useCountUp(streakValue ?? 0, 800);
   const rankLabel = data.stats.leetcode?.percentile
     ? `Top ${Math.max(1, 100 - Math.round(data.stats.leetcode.percentile))}% · LeetCode`
     : rankLabelFallback(data);
-  const handle = data.stats.github?.handle ?? data.stats.leetcode?.handle ?? data.stats.codeforces?.handle ?? data.stats.gfg?.handle ?? "btouch";
+  const handle = data.config.username;
 
   return (
     <motion.div
@@ -110,9 +111,9 @@ export function CardBack({
         background: "#08090e",
       }}
     >
-      <div
-        ref={scrollRef}
-        data-scroll-face="back"
+        <div
+          ref={scrollRef}
+          data-scroll-face="back"
         onMouseDown={(event) => event.stopPropagation()}
         style={{
           width: "100%",
@@ -126,6 +127,25 @@ export function CardBack({
           scrollbarWidth: "none",
         }}
       >
+        {!hasStats ? (
+          <div
+            style={{
+              minHeight: 180,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "rgba(255,255,255,0.2)",
+              fontFamily: "var(--font-space-mono)",
+              fontSize: 10,
+              letterSpacing: "0.08em",
+              textAlign: "center",
+              padding: "16px 8px",
+            }}
+          >
+            no stats available yet
+          </div>
+        ) : null}
+
         <div className="mb-[10px] flex min-w-0 items-center justify-between gap-4">
           <p
             className="truncate text-[8px] uppercase"
@@ -227,9 +247,15 @@ export function CardBack({
               >
                 DAY STREAK
               </div>
-              <div className="font-display text-[26px] font-bold leading-none" style={{ color: "#f89f1b" }}>
-                {streak}
-              </div>
+              {streakValue !== null ? (
+                <div className="font-display text-[26px] font-bold leading-none" style={{ color: "#f89f1b" }}>
+                  {streak}
+                </div>
+              ) : (
+                <div style={{ color: "rgba(255,255,255,0.2)", fontFamily: "var(--font-space-mono)", fontSize: 10, letterSpacing: "0.06em" }}>
+                  no streak data
+                </div>
+              )}
             </div>
             <div style={{ fontSize: 22 }}>🔥</div>
           </motion.div>
@@ -258,7 +284,7 @@ export function CardBack({
               LEETCODE RANK
             </div>
             <div className="font-display text-[16px] font-bold leading-none" style={{ color: "#f89f1b" }}>
-              {rankLabel}
+              {rankLabel || " "}
             </div>
             <div style={{ fontSize: 9, color: "rgba(255,255,255,.28)", marginTop: 3 }}>global ranking</div>
           </motion.div>
@@ -313,5 +339,5 @@ function rankLabelFallback(data: CardData) {
     return data.stats.leetcode.badge;
   }
 
-  return "unranked";
+  return "";
 }

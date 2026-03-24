@@ -50,10 +50,10 @@ export function CardFront({
   onScrollIndexChange?: (index: number) => void;
 }) {
   const linkedinUrl = data.profile.linkedinUrl;
-  const headline = data.profile.headline || "Developer";
-  const role = data.profile.currentRole ?? "Open to work";
-  const company = data.profile.currentCompany ?? "Independent";
-  const linkedInHandle = (linkedinUrl ?? "linkedin").replace("https://www.linkedin.com/in/", "");
+  const headline = data.profile.headline ?? "";
+  const role = data.profile.currentRole ?? "";
+  const company = data.profile.currentCompany ?? "";
+  const linkedInHandle = (linkedinUrl ?? "").replace("https://www.linkedin.com/in/", "");
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -118,7 +118,7 @@ export function CardFront({
       >
         <div className="flex min-w-0 items-start gap-[10px]" style={{ marginBottom: 6 }}>
           <motion.div variants={avatarVariants} className="shrink-0">
-            <Avatar src={data.profile.avatarUrl} alt={data.profile.displayName} size={40} />
+            <Avatar src={data.profile.avatarUrl} alt={data.profile.displayName ?? ""} size={40} />
           </motion.div>
           <div className="min-w-0 flex-1">
             <motion.div variants={item}>
@@ -126,23 +126,25 @@ export function CardFront({
                 {data.profile.displayName}
               </h2>
             </motion.div>
-            <motion.p
-              variants={item}
-              className="truncate text-[10px]"
-              style={{
-                fontFamily: "var(--font-space-mono)",
-                color: "#3d5570",
-                letterSpacing: "0.04em",
-                lineHeight: 1.4,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                marginTop: 3,
-                maxWidth: "100%",
-              }}
-            >
-              {headline}
-            </motion.p>
+            {headline ? (
+              <motion.p
+                variants={item}
+                className="truncate text-[10px]"
+                style={{
+                  fontFamily: "var(--font-space-mono)",
+                  color: "#3d5570",
+                  letterSpacing: "0.04em",
+                  lineHeight: 1.4,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  marginTop: 3,
+                  maxWidth: "100%",
+                }}
+              >
+                {headline}
+              </motion.p>
+            ) : null}
             <motion.div
               variants={item}
               className="inline-flex items-center gap-[5px] border text-[9px]"
@@ -204,7 +206,7 @@ export function CardFront({
             overflow: "hidden",
           }}
         >
-          {data.profile.bio}
+          {data.profile.bio ?? ""}
         </motion.div>
 
         <div
@@ -229,11 +231,13 @@ export function CardFront({
         >
           <BriefcaseBusiness className="h-[14px] w-[14px] shrink-0" style={{ color: "var(--card-accent)" }} />
           <span className="min-w-0 flex-1 text-[10px] font-medium" style={{ color: "#c8d8f0" }}>
-            {role}
+          {role ? role : null}
           </span>
-          <span className="text-[10px] font-medium" style={{ color: "#f89f1b", flexShrink: 0, fontFamily: "var(--font-space-mono)" }}>
-            {company}
-          </span>
+          {company ? (
+            <span className="text-[10px] font-medium" style={{ color: "#f89f1b", flexShrink: 0, fontFamily: "var(--font-space-mono)" }}>
+              {company}
+            </span>
+          ) : null}
         </motion.div>
 
         <div style={{ height: "0.5px", background: "rgba(255,255,255,0.05)", margin: "10px 0 8px" }} />

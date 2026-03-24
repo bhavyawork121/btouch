@@ -11,7 +11,7 @@ export default function PublicCardError({
   return (
     <RouteErrorState
       title="This card could not be rendered."
-      description="A runtime error interrupted the public card view. Retry the route, and if it keeps failing, refresh the page or try again later."
+      message="A runtime error interrupted the public card view. Retry the route, and if it keeps failing, refresh the page or try again later."
       onAction={reset}
     />
   );

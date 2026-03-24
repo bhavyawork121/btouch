@@ -25,7 +25,18 @@ interface HeatmapDay {
 }
 
 type ViewMode = "compact" | "full";
-type PlatformKey = "all" | "github" | "leetcode" | "codeforces" | "gfg";
+type PlatformName = "github" | "leetcode" | "codeforces" | "gfg";
+type PlatformKey = "all" | PlatformName;
+
+const PLATFORM_META: Record<PlatformName, { label: string; color: string; rgb: string }> = {
+  github: { label: "gh", color: "#a78bfa", rgb: "167,139,250" },
+  leetcode: { label: "lc", color: "#f89f1b", rgb: "248,159,27" },
+  codeforces: { label: "cf", color: "#5b8dd4", rgb: "91,141,212" },
+  gfg: { label: "gfg", color: "#2ecc71", rgb: "46,204,113" },
+};
+
+const HEATMAP_DAYS = 91;
+const FLIP_PARTICLE_COUNT = 8;
 
 function isInteractiveTarget(target: EventTarget | null) {
   return target instanceof HTMLElement
@@ -36,11 +47,11 @@ function isInteractiveTarget(target: EventTarget | null) {
 export function FlipCard({ data, username }: { data: CardData; username: string }) {
   const [viewMode, setViewMode] = useState<ViewMode>("compact");
   const [isFlipped, setIsFlipped] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
   const [particles, setParticles] = useState<Particle[]>([]);
   const [frontScrollIndex, setFrontScrollIndex] = useState(0);
   const [backScrollIndex, setBackScrollIndex] = useState(0);
-  const [showFlipHint, setShowFlipHint] = useState(true);
+  const [showFlipHint, setShowFlipHint] = useState(false);
+  const [hasTappedCard, setHasTappedCard] = useState(false);
   const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">(
     data.appearance.theme === "light" ? "light" : "dark",
   );
@@ -49,7 +60,6 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
   const stretchedRef = useRef<HTMLDivElement | null>(null);
   const stretchedFrontRef = useRef<HTMLDivElement | null>(null);
   const stretchedBackRef = useRef<HTMLDivElement | null>(null);
-  const hoverTimer = useRef<number | null>(null);
   const particleId = useRef(0);
 
   useEffect(() => {
@@ -104,14 +114,18 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
   useEffect(() => {
     if (viewMode === "full") {
       setIsFlipped(false);
-      setIsLocked(false);
     }
   }, [viewMode]);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => setShowFlipHint(false), 4000);
+    if (hasTappedCard) {
+      setShowFlipHint(false);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => setShowFlipHint(true), 4000);
     return () => window.clearTimeout(timeoutId);
-  }, []);
+  }, [hasTappedCard]);
 
   const glowStyle = useMemo(
     () => ({
@@ -143,7 +157,7 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
   );
 
   const spawnParticles = useCallback(() => {
-    const nextParticles = Array.from({ length: 7 }, (_, index) => ({
+    const nextParticles = Array.from({ length: FLIP_PARTICLE_COUNT }, (_, index) => ({
       id: particleId.current + index,
       x: 50,
       y: 50,
@@ -168,17 +182,14 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
     [spawnParticles],
   );
 
-  const resetHover = useCallback(() => {
-    if (hoverTimer.current) {
-      window.clearTimeout(hoverTimer.current);
-      hoverTimer.current = null;
-    }
-  }, []);
-
   const toggleFlipLock = useCallback(() => {
-    setIsLocked((prev) => !prev);
+    if (!hasTappedCard) {
+      setHasTappedCard(true);
+      setShowFlipHint(false);
+    }
+
     flip(true);
-  }, [flip]);
+  }, [flip, hasTappedCard]);
 
   const handleCardTap = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
@@ -192,7 +203,7 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
   );
 
   const activeScrollIndex = isFlipped ? backScrollIndex : frontScrollIndex;
-  const fullWidth = Math.min(600, Math.max(320, sceneSize.width + 120));
+  const fullWidth = "100%";
 
   return (
     <div className="relative flex flex-col items-center gap-4">
@@ -210,19 +221,6 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
               const y = `${((event.clientY - rect.top) / rect.height) * 100}%`;
               event.currentTarget.style.setProperty("--mouse-x", x);
               event.currentTarget.style.setProperty("--mouse-y", y);
-            }}
-            onMouseEnter={() => {
-              if (isLocked) {
-                return;
-              }
-              resetHover();
-              hoverTimer.current = window.setTimeout(() => flip(false), 300);
-            }}
-            onMouseLeave={() => {
-              resetHover();
-              if (!isLocked) {
-                setIsFlipped(false);
-              }
             }}
             onClick={handleCardTap}
             onKeyDown={(event) => {
@@ -352,33 +350,23 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
           style={{
             ...cardStyle,
             width: fullWidth,
+            maxWidth: 580,
+            minWidth: 320,
+            margin: "0 auto",
             height: fullHeight || "auto",
             perspective: 1200,
             flexShrink: 0,
           }}
           role="button"
           tabIndex={0}
-          onMouseMove={(event) => {
-            const rect = event.currentTarget.getBoundingClientRect();
-            const x = `${((event.clientX - rect.left) / rect.width) * 100}%`;
-            const y = `${((event.clientY - rect.top) / rect.height) * 100}%`;
-            event.currentTarget.style.setProperty("--mouse-x", x);
-            event.currentTarget.style.setProperty("--mouse-y", y);
-          }}
-          onMouseEnter={() => {
-            if (isLocked) {
-              return;
-            }
-            resetHover();
-            hoverTimer.current = window.setTimeout(() => flip(false), 300);
-          }}
-          onMouseLeave={() => {
-            resetHover();
-            if (!isLocked) {
-              setIsFlipped(false);
-            }
-          }}
-          onClick={handleCardTap}
+            onMouseMove={(event) => {
+              const rect = event.currentTarget.getBoundingClientRect();
+              const x = `${((event.clientX - rect.left) / rect.width) * 100}%`;
+              const y = `${((event.clientY - rect.top) / rect.height) * 100}%`;
+              event.currentTarget.style.setProperty("--mouse-x", x);
+              event.currentTarget.style.setProperty("--mouse-y", y);
+            }}
+            onClick={handleCardTap}
           onKeyDown={(event) => {
             if (event.key !== "Enter" && event.key !== " ") {
               return;
@@ -412,8 +400,8 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
                 boxShadow: "0 0 0 0.5px rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.4), 0 0 60px rgba(99,102,241,0.04)",
               }}
             >
-              <div ref={stretchedFrontRef} style={{ width: "100%", padding: "16px 18px 18px", boxSizing: "border-box" }}>
-                <StretchedFrontContent data={data} handle={username} />
+              <div ref={stretchedFrontRef} style={{ width: "100%", padding: "24px 28px 22px", boxSizing: "border-box" }}>
+                <StretchedFrontContent data={data} handle={username} onFlip={() => setIsFlipped(true)} />
               </div>
             </motion.div>
             <motion.div
@@ -433,7 +421,7 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
                 boxShadow: "0 0 0 0.5px rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.4), 0 0 60px rgba(167,139,250,0.03)",
               }}
             >
-              <div ref={stretchedBackRef} style={{ width: "100%", padding: "16px 18px 18px", boxSizing: "border-box" }}>
+              <div ref={stretchedBackRef} style={{ width: "100%", padding: "24px 28px 22px", boxSizing: "border-box" }}>
                 <StretchedBackContent data={data} />
               </div>
             </motion.div>
@@ -523,6 +511,28 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
           }
         }
 
+        @keyframes flipHintPulse {
+          0%,
+          100% {
+            opacity: 0.7;
+            transform: translateY(0);
+          }
+          50% {
+            opacity: 1;
+            transform: translateY(-1px);
+          }
+        }
+
+        @keyframes spinHint {
+          0%,
+          100% {
+            transform: rotate(0deg);
+          }
+          50% {
+            transform: rotate(12deg);
+          }
+        }
+
         [data-btouch-full="true"]::-webkit-scrollbar {
           display: none;
         }
@@ -534,162 +544,328 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
 function StretchedFrontContent({
   data,
   handle,
+  onFlip,
 }: {
   data: CardData;
   handle: string;
+  onFlip?: () => void;
 }) {
-  const experience = buildExperienceTimeline(data);
-  const initials = getInitials(data.profile.displayName);
-  const linkedInHandle = (data.profile.linkedinUrl ?? "linkedin").replace("https://www.linkedin.com/in/", "");
+  const experience = data.profile.experience ?? [];
+  const initials = getInitials(data.profile.displayName ?? "");
+  const skills = data.profile.skills ?? [];
+  const [copied, setCopied] = useState(false);
+  const linkedInHandle = (data.profile.linkedinUrl ?? "linkedin")
+    .replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//i, "")
+    .replace(/\/$/, "");
+  const location = data.profile.location ?? "";
   const monoFont = "var(--font-space-mono)";
   const groteskFont = "var(--font-space-grotesk)";
 
+  useEffect(() => {
+    if (!copied) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => setCopied(false), 2000);
+    return () => window.clearTimeout(timeoutId);
+  }, [copied]);
+
+  const copyUrl = async (event: MouseEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(`https://btouch.dev/${handle}`);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  };
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
-        <div style={{ minWidth: 52 }}>
-          <Avatar src={data.profile.avatarUrl} alt={data.profile.displayName || initials} size={52} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              fontFamily: groteskFont,
-              fontSize: 17,
-              fontWeight: 700,
-              color: "#f0f4ff",
-              letterSpacing: "-0.02em",
-              lineHeight: 1.1,
-              marginBottom: 5,
-            }}
-          >
-            {data.profile.displayName || initials}
-          </div>
-          <div
-            style={{
-              fontFamily: monoFont,
-              fontSize: 10,
-              color: "rgba(255,255,255,0.3)",
-              letterSpacing: "0.04em",
-              lineHeight: 1.4,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              marginTop: 3,
-              maxWidth: "100%",
-            }}
-          >
-            {data.profile.headline}
-          </div>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 5,
-              background: "rgba(10,102,194,0.08)",
-              border: "0.5px solid rgba(10,102,194,0.22)",
-              borderRadius: 20,
-              padding: "2px 9px",
-              marginTop: 5,
-              fontFamily: monoFont,
-              fontSize: 9,
-              color: "#3d6a8a",
-              letterSpacing: "0.04em",
-              width: "fit-content",
-              maxWidth: "100%",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <span style={{ color: "#0A66C2", fontSize: 10 }}>in</span>
-            {linkedInHandle}
-          </div>
-        </div>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", boxSizing: "border-box" }}>
+      <div style={{ width: "100%", position: "relative", marginBottom: 16 }}>
         {data.profile.linkedinUrl ? (
           <a
             href={data.profile.linkedinUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(event) => event.stopPropagation()}
             style={{
-              flexShrink: 0,
-              background: "rgba(255,255,255,.06)",
-              border: "0.5px solid rgba(255,255,255,.12)",
+              position: "absolute",
+              top: 0,
+              right: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              background: "rgba(255,255,255,0.04)",
+              border: "0.5px solid rgba(255,255,255,0.09)",
               borderRadius: 6,
-              padding: "5px 12px",
+              padding: "5px 10px",
               fontFamily: monoFont,
-              fontSize: 9,
-              color: "rgba(255,255,255,.45)",
-              letterSpacing: "0.08em",
+              fontSize: 8.5,
+              color: "rgba(255,255,255,0.28)",
               textDecoration: "none",
+              letterSpacing: "0.08em",
+              cursor: "pointer",
               whiteSpace: "nowrap",
             }}
           >
             live profile
+            <span style={{ fontSize: 10 }}>↗</span>
           </a>
+        ) : null}
+
+        <div style={{ display: "flex", justifyContent: "center", paddingTop: 8 }}>
+          <div
+            style={{
+              width: 76,
+              height: 76,
+              borderRadius: "50%",
+              background: data.profile.avatarUrl ? "linear-gradient(135deg,#4f46e5,#7c3aed)" : "linear-gradient(135deg,#4f46e5,#7c3aed)",
+              border: "2px solid rgba(99,102,241,0.3)",
+              outline: "5px solid rgba(99,102,241,0.07)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 24,
+              fontWeight: 700,
+              color: "#fff",
+              fontFamily: groteskFont,
+              overflow: "hidden",
+            }}
+          >
+            <Avatar src={data.profile.avatarUrl} alt={data.profile.displayName || initials} size={76} />
+          </div>
+        </div>
+
+        <div
+          style={{
+            fontFamily: groteskFont,
+            fontSize: 21,
+            fontWeight: 700,
+            color: "#f0f4ff",
+            letterSpacing: "-0.02em",
+            lineHeight: 1.1,
+            marginBottom: 6,
+            textAlign: "center",
+          }}
+        >
+          {data.profile.displayName || initials}
+        </div>
+
+        <div
+          style={{
+            fontFamily: monoFont,
+            fontSize: 10,
+            color: "rgba(255,255,255,0.28)",
+            letterSpacing: "0.04em",
+            lineHeight: 1.3,
+            marginBottom: 10,
+            textAlign: "center",
+            maxWidth: "100%",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            padding: "0 40px",
+          }}
+        >
+          {data.profile.headline}
+        </div>
+
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            background: "rgba(10,102,194,0.07)",
+            border: "0.5px solid rgba(10,102,194,0.18)",
+            borderRadius: 20,
+            padding: "3px 10px",
+            marginBottom: 8,
+          }}
+        >
+          <span style={{ fontFamily: monoFont, fontSize: 8, color: "#0A66C2", fontWeight: 700 }}>in</span>
+          <span
+            style={{
+              fontFamily: monoFont,
+              fontSize: 8.5,
+              color: "#3d6a8a",
+              letterSpacing: "0.02em",
+              maxWidth: 160,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {linkedInHandle}
+          </span>
+        </div>
+
+        {data.profile.openToWork ? (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              background: "rgba(34,197,94,0.07)",
+              border: "0.5px solid rgba(34,197,94,0.2)",
+              borderRadius: 20,
+              padding: "3px 10px",
+              marginBottom: 10,
+              fontFamily: monoFont,
+              fontSize: 8.5,
+              color: "rgba(134,239,172,0.7)",
+              letterSpacing: "0.06em",
+            }}
+          >
+            <div
+              style={{
+                width: 5,
+                height: 5,
+                borderRadius: "50%",
+                background: "#22c55e",
+                animation: "pulse 1.5s ease-in-out infinite",
+              }}
+            />
+            open to work
+          </div>
+        ) : null}
+
+        {(location || handle) ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              fontFamily: monoFont,
+              fontSize: 9,
+              color: "rgba(255,255,255,0.2)",
+              letterSpacing: "0.06em",
+            }}
+          >
+            {location ? <span>{location}</span> : null}
+            {location && handle ? (
+              <span
+                style={{
+                  width: 3,
+                  height: 3,
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,0.15)",
+                  display: "inline-block",
+                }}
+              />
+            ) : null}
+            {handle ? <span>@ {handle}</span> : null}
+          </div>
         ) : null}
       </div>
 
-      <div style={{ height: "0.5px", background: "rgba(255,255,255,.07)", marginBottom: 12 }} />
-      <div
-        style={{
-          fontFamily: groteskFont,
-          fontWeight: 300,
-          fontSize: 11,
-          color: "rgba(255,255,255,0.38)",
-          lineHeight: 1.65,
-          letterSpacing: "0.01em",
-          marginBottom: 12,
-          maxWidth: 540,
-        }}
-      >
-        {data.profile.bio}
-      </div>
+      <div style={{ width: "100%", height: "0.5px", background: "rgba(255,255,255,0.06)", marginBottom: 18 }} />
 
-      <div
-        style={{
-          fontFamily: monoFont,
-          fontSize: 8,
-          letterSpacing: "0.2em",
-          color: "rgba(255,255,255,.15)",
-          textTransform: "uppercase",
-          marginBottom: 10,
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-        }}
-      >
-        <span>experience</span>
-        <div style={{ flex: 1, height: "0.5px", background: "rgba(255,255,255,.06)" }} />
-      </div>
+      {data.profile.bio ? (
+        <div
+          style={{
+            fontFamily: groteskFont,
+            fontWeight: 300,
+            fontSize: 12,
+            color: "rgba(255,255,255,0.38)",
+            lineHeight: 1.75,
+            letterSpacing: "0.01em",
+            textAlign: "left",
+            width: "100%",
+            marginBottom: 16,
+          }}
+        >
+          {data.profile.bio}
+        </div>
+      ) : null}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-        {experience.map((exp, index) => (
-          <div key={`${exp.role}-${exp.company}-${index}`} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 3 }}>
-              <div
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: index === 0 ? "#6366f1" : "rgba(255,255,255,.15)",
-                  border: index === 0 ? "2px solid rgba(99,102,241,.4)" : "1px solid rgba(255,255,255,.1)",
-                }}
-              />
-              {index < experience.length - 1 ? (
-                <div style={{ width: "0.5px", flex: 1, minHeight: 12, marginTop: 4, background: "rgba(255,255,255,.08)" }} />
-              ) : null}
-            </div>
+      {skills.length > 0 ? (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "flex-start", marginBottom: 18, width: "100%" }}>
+          {skills.map((skill, index) => (
+            <span
+              key={`${skill}-${index}`}
+              style={{
+                fontFamily: monoFont,
+                fontSize: 8.5,
+                color: index % 3 === 0 ? "rgba(165,180,252,0.65)" : index % 3 === 1 ? "rgba(196,181,253,0.65)" : "rgba(253,186,116,0.65)",
+                background:
+                  index % 3 === 0
+                    ? "rgba(99,102,241,0.07)"
+                    : index % 3 === 1
+                      ? "rgba(167,139,250,0.07)"
+                      : "rgba(248,159,27,0.06)",
+                border: "0.5px solid",
+                borderColor:
+                  index % 3 === 0
+                    ? "rgba(99,102,241,0.2)"
+                    : index % 3 === 1
+                      ? "rgba(167,139,250,0.2)"
+                      : "rgba(248,159,27,0.18)",
+                borderLeft:
+                  index % 3 === 0
+                    ? "2px solid rgba(99,102,241,0.6)"
+                    : index % 3 === 1
+                      ? "2px solid rgba(167,139,250,0.6)"
+                      : "2px solid rgba(248,159,27,0.6)",
+                borderRadius: 4,
+                padding: "3px 9px",
+                letterSpacing: "0.05em",
+              }}
+            >
+              {skill}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
-            <div style={{ flex: 1, paddingBottom: 8 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4, gap: 6 }}>
-                <div>
+      <div style={{ width: "100%" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+          <div style={{ flex: 1, height: "0.5px", background: "rgba(255,255,255,0.06)" }} />
+          <span
+            style={{
+              fontFamily: monoFont,
+              fontSize: 8.5,
+              color: "rgba(255,255,255,0.18)",
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              whiteSpace: "nowrap",
+            }}
+          >
+            experience
+          </span>
+          <div style={{ flex: 1, height: "0.5px", background: "rgba(255,255,255,0.06)" }} />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          {experience.length > 0 ? (
+            experience.map((exp, index) => (
+            <div key={`${exp.role}-${exp.company}-${index}`} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 4, width: 16 }}>
+                <div
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: index === 0 ? "#6366f1" : "rgba(255,255,255,0.12)",
+                    border: index === 0 ? "2px solid rgba(99,102,241,0.3)" : "1px solid rgba(255,255,255,0.08)",
+                    flexShrink: 0,
+                  }}
+                />
+                {index < experience.length - 1 ? (
+                  <div style={{ width: "0.5px", flex: 1, minHeight: 24, background: "rgba(255,255,255,0.06)", marginTop: 4 }} />
+                ) : null}
+              </div>
+
+              <div style={{ flex: 1, paddingBottom: index < experience.length - 1 ? 16 : 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 3 }}>
                   <div
                     style={{
                       fontFamily: groteskFont,
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: 600,
                       color: "#d4e4f7",
                       letterSpacing: "-0.01em",
+                      lineHeight: 1.3,
                     }}
                   >
                     {exp.role}
@@ -697,58 +873,75 @@ function StretchedFrontContent({
                   <div
                     style={{
                       fontFamily: monoFont,
-                      fontSize: 10,
-                      color: "#f89f1b",
-                      letterSpacing: "0.03em",
+                      fontSize: 8.5,
+                      color: "rgba(255,255,255,0.18)",
+                      letterSpacing: "0.04em",
+                      whiteSpace: "nowrap",
                       marginTop: 2,
+                      flexShrink: 0,
                     }}
                   >
-                    {exp.company}
+                    {exp.duration}
                   </div>
                 </div>
+
                 <div
                   style={{
                     fontFamily: monoFont,
-                    fontSize: 9,
-                    color: "rgba(255,255,255,.2)",
-                    letterSpacing: "0.06em",
-                    whiteSpace: "nowrap",
-                    marginTop: 2,
-                  }}
-                >
-                  {exp.duration}
-                </div>
-              </div>
-              {exp.description && exp.description !== data.profile.bio ? (
-                <div
-                  style={{
-                    fontFamily: groteskFont,
-                    fontWeight: 300,
                     fontSize: 10,
-                    color: "rgba(255,255,255,0.25)",
-                    lineHeight: 1.6,
-                    marginTop: 5,
-                    maxWidth: 500,
+                    color: "#f89f1b",
+                    letterSpacing: "0.03em",
+                    marginBottom: 5,
                   }}
                 >
-                  {exp.description.slice(0, 120)}
-                  {exp.description.length > 120 ? "..." : ""}
+                  {exp.company}
                 </div>
-              ) : null}
+
+                {exp.description && exp.description !== data.profile.bio ? (
+                  <div
+                    style={{
+                      fontFamily: groteskFont,
+                      fontWeight: 300,
+                      fontSize: 10.5,
+                      color: "rgba(255,255,255,0.26)",
+                      lineHeight: 1.65,
+                      marginTop: 4,
+                    }}
+                  >
+                    {exp.description.length > 100 ? `${exp.description.slice(0, 100)}...` : exp.description}
+                  </div>
+                ) : null}
+              </div>
             </div>
-          </div>
-        ))}
+            ))
+          ) : (
+            <div
+              style={{
+                padding: "12px 0",
+                textAlign: "center",
+                fontFamily: monoFont,
+                fontSize: 10,
+                color: "rgba(255,255,255,0.2)",
+                letterSpacing: "0.08em",
+              }}
+            >
+              no experience added yet
+            </div>
+          )}
+        </div>
       </div>
 
       <div
         style={{
+          width: "100%",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           borderTop: "0.5px solid rgba(255,255,255,0.06)",
           paddingTop: 12,
-          marginTop: 14,
-          gap: 12,
+          marginTop: 18,
+          gap: 8,
+          overflow: "hidden",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
@@ -761,20 +954,18 @@ function StretchedFrontContent({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              flexShrink: 0,
             }}
           >
-            <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 9, fontWeight: 700, color: "#fff" }}>b</span>
+            <span style={{ fontFamily: monoFont, fontSize: 9, fontWeight: 700, color: "#fff" }}>b</span>
           </div>
-          <div>
+          <div style={{ lineHeight: 1 }}>
             <div
               style={{
                 fontFamily: monoFont,
                 fontSize: 10,
                 fontWeight: 700,
-                color: "rgba(255,255,255,0.4)",
+                color: "rgba(255,255,255,0.38)",
                 letterSpacing: "0.06em",
-                lineHeight: 1,
               }}
             >
               btouch
@@ -783,9 +974,9 @@ function StretchedFrontContent({
               style={{
                 fontFamily: monoFont,
                 fontSize: 7,
-                color: "rgba(255,255,255,0.15)",
-                letterSpacing: "0.08em",
-                marginTop: 1.5,
+                color: "rgba(255,255,255,0.14)",
+                letterSpacing: "0.1em",
+                marginTop: 2,
               }}
             >
               dev identity card
@@ -797,38 +988,48 @@ function StretchedFrontContent({
           style={{
             fontFamily: monoFont,
             fontSize: 8.5,
-            color: "rgba(255,255,255,0.15)",
+            color: "rgba(255,255,255,0.13)",
             letterSpacing: "0.06em",
             flex: 1,
             textAlign: "center",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            minWidth: 0,
+            cursor: "pointer",
           }}
+          onClick={copyUrl}
         >
-          btouch.dev/{handle}
+          {copied ? "✓ copied" : `btouch.dev/${handle}`}
         </div>
 
-        <div
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onFlip?.();
+          }}
           style={{
             display: "flex",
             alignItems: "center",
             gap: 5,
-            background: "rgba(99,102,241,0.08)",
+            background: "rgba(99,102,241,0.1)",
             border: "0.5px solid rgba(99,102,241,0.25)",
             borderRadius: 6,
-            padding: "5px 11px",
+            padding: "6px 12px",
             fontFamily: monoFont,
             fontSize: 9,
-            color: "rgba(165,180,252,0.65)",
+            color: "rgba(165,180,252,0.7)",
             letterSpacing: "0.08em",
-            whiteSpace: "nowrap",
+            cursor: "pointer",
             flexShrink: 0,
+            whiteSpace: "nowrap",
+            animation: "flipHintPulse 2.5s ease-in-out infinite",
           }}
         >
-          <span>↻</span>
-          tap to flip
-        </div>
+          <span style={{ display: "inline-block", animation: "spinHint 3s ease-in-out infinite" }}>↻</span>
+          flip for stats
+        </button>
       </div>
     </div>
   );
@@ -841,13 +1042,50 @@ function StretchedBackContent({ data }: { data: CardData }) {
   const monoFont = "var(--font-space-mono)";
   const groteskFont = "var(--font-space-grotesk)";
   const active = stats.platformConfig[activePlatform];
-  const totalContribs = active.data.reduce((sum, day) => sum + day.count, 0);
-  const activeDays = active.data.filter((day) => day.count > 0).length;
-  const maxDay = active.data.reduce(
+  const trimmedData = trimLeadingZeroDays(active.data);
+  const numWeeks = Math.max(1, Math.ceil(trimmedData.length / 7));
+  const monthLabels = getMonthLabels(trimmedData);
+  const totalContribs = trimmedData.reduce((sum, day) => sum + day.count, 0);
+  const activeDays = trimmedData.filter((day) => day.count > 0).length;
+  const maxDay = trimmedData.reduce(
     (max, day) => (day.count > max.count ? day : max),
-    { date: active.data[0]?.date ?? "", count: 0 },
+    { date: trimmedData[0]?.date ?? "", count: 0 },
   );
-  const maxCount = Math.max(...active.data.map((day) => day.count), 0);
+  const maxCount = Math.max(...trimmedData.map((day) => day.count), 0);
+  const tabLabels = {
+    all: "all",
+    github: "gh",
+    leetcode: "lc",
+    codeforces: "cf",
+    gfg: "gfg",
+  } as const;
+  const streakBest = Math.max(stats.longestStreak, stats.streak);
+
+  if (trimmedData.length === 0) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        <div
+          style={{
+            minHeight: 180,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 10,
+            background: "rgba(255,255,255,.025)",
+            border: "0.5px solid rgba(255,255,255,.07)",
+            color: "rgba(255,255,255,0.2)",
+            fontFamily: monoFont,
+            fontSize: 10,
+            letterSpacing: "0.08em",
+            textAlign: "center",
+          }}
+        >
+          no stats available yet
+        </div>
+        <BtouchFooter side="back" handle={stats.handle} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
@@ -857,7 +1095,9 @@ function StretchedBackContent({ data }: { data: CardData }) {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8, marginBottom: 10 }}>
-        {stats.platformCards.map((platform) => (
+        {stats.platformCards
+          .filter((platform) => data.config.showPlatforms.includes(platform.platform))
+          .map((platform) => (
           <button
             key={platform.key}
             type="button"
@@ -871,20 +1111,26 @@ function StretchedBackContent({ data }: { data: CardData }) {
               position: "relative",
               borderRadius: 10,
               padding: "10px 12px",
-              background: activePlatform === platform.platform ? `rgba(${platform.rgb}, 0.06)` : "rgba(255,255,255,0.025)",
-              border: activePlatform === platform.platform ? `0.5px solid rgba(${platform.rgb}, 0.2)` : "0.5px solid rgba(255,255,255,0.06)",
-              borderLeft: activePlatform === platform.platform ? `2px solid ${platform.color}` : "0.5px solid rgba(255,255,255,0.06)",
+              background:
+                activePlatform === platform.platform
+                  ? platform.platform === "codeforces"
+                    ? "rgba(15,25,45,0.8)"
+                    : `rgba(${platform.rgb}, 0.07)`
+                  : "rgba(255,255,255,0.025)",
+              border: activePlatform === platform.platform ? `0.5px solid rgba(${platform.rgb}, 0.18)` : "0.5px solid rgba(255,255,255,0.06)",
+              borderLeft: activePlatform === platform.platform ? `2.5px solid ${platform.color}` : "0.5px solid rgba(255,255,255,0.06)",
               transition: "all 0.2s",
               textAlign: "left",
             }}
           >
             <div style={{ fontFamily: monoFont, fontSize: 8, letterSpacing: "0.14em", color: platform.color, opacity: 0.8, marginBottom: 4 }}>
-              {platform.key}
+              {tabLabels[platform.platform]}
             </div>
             <div style={{ fontFamily: groteskFont, fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: platform.color, lineHeight: 1, marginBottom: 4 }}>
               {platform.value}
             </div>
             <div style={{ fontFamily: monoFont, fontSize: 8, color: "rgba(255,255,255,.25)", letterSpacing: "0.06em" }}>{platform.label}</div>
+            <MiniSparkline data={platform.data.slice(-8).map((day) => day.count)} color={platform.color} colorRgb={platform.rgb} />
           </button>
         ))}
       </div>
@@ -904,13 +1150,14 @@ function StretchedBackContent({ data }: { data: CardData }) {
             gap: 10,
           }}
         >
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: monoFont, fontSize: 8, letterSpacing: "0.12em", color: "rgba(248,159,27,.45)", marginBottom: 3 }}>
               DAY STREAK
             </div>
-            <div style={{ fontFamily: groteskFont, fontSize: 22, fontWeight: 700, color: "#f89f1b", lineHeight: 1 }}>{stats.streak}</div>
+            <div style={{ fontFamily: groteskFont, fontSize: 22, fontWeight: 700, color: "#f89f1b", lineHeight: 1, marginBottom: 2 }}>{stats.streak}</div>
+            <div style={{ fontFamily: monoFont, fontSize: 6, color: "rgba(248,159,27,0.45)", letterSpacing: "0.08em" }}>days active</div>
           </div>
-          <span style={{ fontSize: 18 }}>🔥</span>
+          <StreakRing streak={stats.streak} best={streakBest} />
         </div>
         <div
           style={{
@@ -944,8 +1191,8 @@ function StretchedBackContent({ data }: { data: CardData }) {
           marginBottom: 10,
         }}
       >
-        <div style={{ display: "flex", gap: 5, marginBottom: 10, flexWrap: "wrap" }}>
-          {(["all", "github", "leetcode", "codeforces", "gfg"] as const).map((platform) => (
+        <div style={{ display: "flex", gap: 5, marginBottom: 10, flexWrap: "nowrap", overflow: "hidden" }}>
+          {(["all", ...data.config.showPlatforms] as const).map((platform) => (
             <button
               key={platform}
               type="button"
@@ -959,7 +1206,7 @@ function StretchedBackContent({ data }: { data: CardData }) {
                 fontSize: 8.5,
                 letterSpacing: "0.1em",
                 padding: "4px 12px",
-                borderRadius: 6,
+                borderRadius: 5,
                 border: "0.5px solid",
                 cursor: "pointer",
                 transition: "all 0.2s",
@@ -967,9 +1214,11 @@ function StretchedBackContent({ data }: { data: CardData }) {
                 borderColor: activePlatform === platform ? `rgba(${stats.platformConfig[platform].rgb},0.35)` : "rgba(255,255,255,0.08)",
                 color: activePlatform === platform ? stats.platformConfig[platform].color : "rgba(255,255,255,0.22)",
                 borderLeft: activePlatform === platform ? `2px solid ${stats.platformConfig[platform].color}` : "0.5px solid rgba(255,255,255,0.08)",
+                flexShrink: 0,
+                whiteSpace: "nowrap",
               }}
             >
-              {platform === "all" ? "all" : platform}
+              {tabLabels[platform]}
             </button>
           ))}
         </div>
@@ -997,34 +1246,107 @@ function StretchedBackContent({ data }: { data: CardData }) {
         </div>
 
         <div style={{ position: "relative" }}>
-          <div key={activePlatform} className="heatmap-grid" style={{ display: "grid", gridTemplateColumns: "repeat(13, 1fr)", gap: 2.5, width: "100%", animation: "heatmapFade 0.3s ease-out" }}>
-            {active.data.map((day, index) => {
-              const intensity = maxCount > 0 ? day.count / maxCount : 0;
-              const opacity = day.count === 0 ? 0.07 : 0.2 + intensity * 0.8;
-
-              return (
+          <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateRows: "repeat(7, 1fr)",
+                gap: 2,
+                paddingTop: 2,
+                flexShrink: 0,
+              }}
+            >
+              {["S", "M", "T", "W", "T", "F", "S"].map((dayLabel, index) => (
                 <div
-                  key={`${activePlatform}-${day.date}-${index}`}
-                  onMouseEnter={(event) => {
-                    event.stopPropagation();
-                    setHoveredDot({ index, date: day.date, count: day.count });
-                  }}
-                  onMouseLeave={() => setHoveredDot(null)}
-                  onClick={(event) => event.stopPropagation()}
+                  key={`${dayLabel}-${index}`}
                   style={{
-                    aspectRatio: "1 / 1",
-                    width: "100%",
-                    height: "auto",
-                    borderRadius: 1.5,
-                    background: `rgba(${active.rgb},${opacity.toFixed(2)})`,
-                    cursor: day.count > 0 ? "pointer" : "default",
-                    transition: "transform 0.1s, outline 0.1s",
-                    transform: hoveredDot?.index === index ? "scale(1.3)" : "scale(1)",
-                    outline: hoveredDot?.index === index ? `1px solid rgba(${active.rgb},0.6)` : "none",
+                    fontFamily: monoFont,
+                    fontSize: 7,
+                    color: index % 2 === 1 ? "rgba(255,255,255,0.2)" : "transparent",
+                    letterSpacing: "0.06em",
+                    lineHeight: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    height: "calc(100% / 7)",
                   }}
-                />
-              );
-            })}
+                >
+                  {dayLabel}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: `repeat(${numWeeks}, 1fr)`,
+                  gap: 2,
+                  marginBottom: 4,
+                  paddingLeft: 0,
+                }}
+              >
+                {Array.from({ length: numWeeks }).map((_, weekIndex) => {
+                  const month = monthLabels.find((entry) => entry.weekIndex === weekIndex);
+                  return (
+                    <div
+                      key={weekIndex}
+                      style={{
+                        fontFamily: monoFont,
+                        fontSize: 7,
+                        color: month ? "rgba(255,255,255,0.2)" : "transparent",
+                        letterSpacing: "0.04em",
+                        whiteSpace: "nowrap",
+                        overflow: "visible",
+                      }}
+                    >
+                      {month?.label ?? ""}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div
+                key={activePlatform}
+                className="heatmap-grid"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: `repeat(${numWeeks}, 1fr)`,
+                  gridTemplateRows: "repeat(7, 1fr)",
+                  gridAutoFlow: "column",
+                  gap: 2,
+                  width: "100%",
+                  animation: "heatmapFade 0.3s ease-out",
+                }}
+              >
+                {trimmedData.map((day, index) => {
+                  const intensity = maxCount > 0 ? day.count / maxCount : 0;
+                  const opacity = day.count === 0 ? 0.07 : 0.2 + intensity * 0.8;
+
+                  return (
+                    <div
+                      key={`${activePlatform}-${day.date}-${index}`}
+                      onMouseEnter={(event) => {
+                        event.stopPropagation();
+                        setHoveredDot({ index, date: day.date, count: day.count });
+                      }}
+                      onMouseLeave={() => setHoveredDot(null)}
+                      onClick={(event) => event.stopPropagation()}
+                      style={{
+                        aspectRatio: "1 / 1",
+                        width: "100%",
+                        height: "auto",
+                        borderRadius: 1,
+                        background: `rgba(${active.rgb},${opacity.toFixed(2)})`,
+                        cursor: day.count > 0 ? "pointer" : "default",
+                        transition: "transform 0.1s, outline 0.1s",
+                        transform: hoveredDot?.index === index ? "scale(1.25)" : "scale(1)",
+                        outline: hoveredDot?.index === index ? `1px solid rgba(${active.rgb},0.6)` : "none",
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {hoveredDot ? (
@@ -1032,7 +1354,7 @@ function StretchedBackContent({ data }: { data: CardData }) {
               style={{
                 position: "absolute",
                 bottom: "calc(100% + 6px)",
-                left: `${Math.min(Math.max((hoveredDot.index % 13) * (100 / 13), 8), 80)}%`,
+                left: `${Math.min(Math.max(Math.floor(hoveredDot.index / 7) * (100 / numWeeks), 8), 80)}%`,
                 transform: "translateX(-50%)",
                 background: "#1a1f2e",
                 border: `0.5px solid rgba(${active.rgb},0.35)`,
@@ -1076,7 +1398,7 @@ function StretchedBackContent({ data }: { data: CardData }) {
         </div>
       </div>
 
-      <BtouchFooter side="back" handle={stats.handle} rankPill="top 7% · lc" />
+      <BtouchFooter side="back" handle={stats.handle} rankPill={stats.rank || undefined} />
     </div>
   );
 }
@@ -1144,7 +1466,7 @@ function BtouchFooter({ side, handle, rankPill }: { side: "front" | "back"; hand
         <span style={{ fontFamily: monoFont, fontSize: 8, color: "rgba(255,255,255,0.15)", letterSpacing: "0.1em" }}>btouch.dev/{handle}</span>
       )}
 
-      {side === "back" ? (
+      {side === "back" && rankPill ? (
         <div
           style={{
             fontFamily: monoFont,
@@ -1158,31 +1480,11 @@ function BtouchFooter({ side, handle, rankPill }: { side: "front" | "back"; hand
             flexShrink: 0,
           }}
         >
-          {rankPill ?? "top 7% · lc"}
+          {rankPill}
         </div>
       ) : null}
     </div>
   );
-}
-
-function buildExperienceTimeline(data: CardData) {
-  const role = data.profile.currentRole ?? "Software Engineer";
-  const company = data.profile.currentCompany ?? "Independent";
-
-  return [
-    {
-      role,
-      company,
-      duration: "Now",
-      description: "Currently building developer-facing interfaces and systems.",
-    },
-    {
-      role: "Builder",
-      company: "btouch",
-      duration: "Ongoing",
-      description: "Designing a shareable developer identity card with motion, public profile surfaces, and live coding stats.",
-    },
-  ];
 }
 
 function getInitials(name: string) {
@@ -1190,20 +1492,99 @@ function getInitials(name: string) {
   return (parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "");
 }
 
-function normalizeHeatmap(source: number[] | undefined) {
-  const fallback = Array.from({ length: 91 }, (_, index) => index % 5);
-  const heatmap = source && source.length > 0 ? source : fallback;
+function trimLeadingZeroDays(data: HeatmapDay[]) {
+  let start = 0;
 
-  return Array.from({ length: 91 }, (_, index) => {
+  while (start < data.length - 1 && data[start].count === 0) {
+    start += 1;
+  }
+
+  start = Math.max(0, start - (start % 7));
+  return data.slice(start);
+}
+
+function getMonthLabels(data: HeatmapDay[]) {
+  const labels: { label: string; weekIndex: number }[] = [];
+  let lastMonth = "";
+
+  data.forEach((day, index) => {
+    const month = new Date(day.date).toLocaleString("default", { month: "short" });
+    if (month !== lastMonth) {
+      labels.push({ label: month, weekIndex: Math.floor(index / 7) });
+      lastMonth = month;
+    }
+  });
+
+  return labels;
+}
+
+function MiniSparkline({ data, color, colorRgb }: { data: number[]; color: string; colorRgb: string }) {
+  const max = Math.max(...data, 1);
+
+  return (
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 1.5, height: 14, marginTop: 6 }}>
+      {data.slice(-8).map((value, index) => (
+        <div
+          key={`${colorRgb}-${index}`}
+          style={{
+            flex: 1,
+            height: `${Math.max(2, (value / max) * 14)}px`,
+            background: index === 7 ? color : `rgba(${colorRgb},0.3)`,
+            borderRadius: 1,
+            transition: "height 0.3s",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function StreakRing({ streak, best }: { streak: number; best: number }) {
+  const r = 22;
+  const circumference = 2 * Math.PI * r;
+  const pct = Math.min(streak / Math.max(best, 1), 1);
+  const dash = pct * circumference;
+
+  return (
+    <div style={{ position: "relative", width: 60, height: 60, flexShrink: 0 }}>
+      <svg width="60" height="60" style={{ transform: "rotate(-90deg)" }}>
+        <circle cx="30" cy="30" r={r} fill="none" stroke="rgba(248,159,27,0.12)" strokeWidth="3" />
+        <circle
+          cx="30"
+          cy="30"
+          r={r}
+          fill="none"
+          stroke="#f89f1b"
+          strokeWidth="3"
+          strokeDasharray={`${dash} ${circumference}`}
+          strokeLinecap="round"
+        />
+      </svg>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ fontFamily: "var(--font-space-grotesk)", fontSize: 16, fontWeight: 700, color: "#f89f1b", lineHeight: 1 }}>{streak}</div>
+        <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 6, color: "rgba(248,159,27,0.45)", letterSpacing: "0.08em", marginTop: 1 }}>days</div>
+      </div>
+    </div>
+  );
+}
+
+function normalizeHeatmap(source: number[] | undefined) {
+  const heatmap = source && source.length > 0 ? source : [];
+
+  return Array.from({ length: HEATMAP_DAYS }, (_, index) => {
     const raw = heatmap[index % heatmap.length] ?? 0;
     return Math.max(0, Math.min(4, raw));
   });
 }
 
 function buildContributionSeries(levels: number[], scale: number, seedOffset: number): HeatmapDay[] {
-  return Array.from({ length: 91 }, (_, index) => {
+  if (levels.length === 0) {
+    return [];
+  }
+
+  return Array.from({ length: HEATMAP_DAYS }, (_, index) => {
     const date = new Date();
-    date.setDate(date.getDate() - (90 - index));
+    date.setDate(date.getDate() - (HEATMAP_DAYS - 1 - index));
     const base = levels[index % levels.length] ?? 0;
     const count = Math.max(0, Math.round(base * scale + ((index + seedOffset) % 3 === 0 ? 1 : 0)));
 
@@ -1223,7 +1604,7 @@ function getFullStatsView(data: CardData) {
   const leetcodeData = buildContributionSeries(normalizeHeatmap(github?.heatmap), 0.8, 2);
   const codeforcesData = buildContributionSeries(normalizeHeatmap(github?.heatmap), 0.65, 3);
   const gfgData = buildContributionSeries(normalizeHeatmap(github?.heatmap), 0.55, 4);
-  const combinedData = Array.from({ length: 91 }, (_, index) => ({
+  const combinedData = Array.from({ length: HEATMAP_DAYS }, (_, index) => ({
     date: githubData[index]?.date ?? "",
     count:
       (githubData[index]?.count ?? 0) +
@@ -1233,24 +1614,25 @@ function getFullStatsView(data: CardData) {
   }));
 
   return {
-    handle: github?.handle ?? leetcode?.handle ?? codeforces?.handle ?? gfg?.handle ?? "btouch",
+    handle: data.config.username,
     streak: leetcode?.streak ?? gfg?.streak ?? 0,
+    longestStreak: Math.max(leetcode?.streak ?? 0, gfg?.streak ?? 0),
     rank:
       leetcode?.ranking !== null && leetcode?.ranking !== undefined
         ? `#${leetcode.ranking.toLocaleString()}`
-        : codeforces?.rank ?? "Unranked",
+        : codeforces?.rank ?? "",
     platformCards: [
-      { key: "GITHUB", value: (github?.followers ?? 0).toLocaleString(), label: "followers", color: "#a78bfa", platform: "github" as const, rgb: "167,139,250" },
-      { key: "LEETCODE", value: (leetcode?.solved.total ?? 0).toLocaleString(), label: "problems solved", color: "#f89f1b", platform: "leetcode" as const, rgb: "248,159,27" },
-      { key: "CODEFORCES", value: (codeforces?.rating ?? 0).toLocaleString(), label: "current rating", color: "#5b8dd4", platform: "codeforces" as const, rgb: "91,141,212" },
-      { key: "GFG", value: (gfg?.score ?? 0).toLocaleString(), label: "practice score", color: "#2ecc71", platform: "gfg" as const, rgb: "46,204,113" },
+      { key: "GITHUB", value: github?.followers != null ? github.followers.toLocaleString() : "", label: "followers", color: PLATFORM_META.github.color, platform: "github" as const, rgb: PLATFORM_META.github.rgb, data: githubData },
+      { key: "LEETCODE", value: leetcode?.solved.total != null ? leetcode.solved.total.toLocaleString() : "", label: "problems solved", color: PLATFORM_META.leetcode.color, platform: "leetcode" as const, rgb: PLATFORM_META.leetcode.rgb, data: leetcodeData },
+      { key: "CODEFORCES", value: codeforces?.rating != null ? codeforces.rating.toLocaleString() : "", label: "current rating", color: PLATFORM_META.codeforces.color, platform: "codeforces" as const, rgb: PLATFORM_META.codeforces.rgb, data: codeforcesData },
+      { key: "GFG", value: gfg?.score != null ? gfg.score.toLocaleString() : "", label: "practice score", color: PLATFORM_META.gfg.color, platform: "gfg" as const, rgb: PLATFORM_META.gfg.rgb, data: gfgData },
     ],
     platformConfig: {
-      all: { label: "ALL CONTRIBUTIONS", color: "#a78bfa", rgb: "167,139,250", data: combinedData },
-      github: { label: "GITHUB COMMITS", color: "#a78bfa", rgb: "167,139,250", data: githubData },
-      leetcode: { label: "LEETCODE SUBMISSIONS", color: "#f89f1b", rgb: "248,159,27", data: leetcodeData },
-      codeforces: { label: "CODEFORCES SUBMISSIONS", color: "#5b8dd4", rgb: "91,141,212", data: codeforcesData },
-      gfg: { label: "GFG SUBMISSIONS", color: "#2ecc71", rgb: "46,204,113", data: gfgData },
+      all: { label: "ALL CONTRIBUTIONS", color: PLATFORM_META.github.color, rgb: PLATFORM_META.github.rgb, data: combinedData },
+      github: { label: "GITHUB COMMITS", color: PLATFORM_META.github.color, rgb: PLATFORM_META.github.rgb, data: githubData },
+      leetcode: { label: "LEETCODE SUBMISSIONS", color: PLATFORM_META.leetcode.color, rgb: PLATFORM_META.leetcode.rgb, data: leetcodeData },
+      codeforces: { label: "CODEFORCES SUBMISSIONS", color: PLATFORM_META.codeforces.color, rgb: PLATFORM_META.codeforces.rgb, data: codeforcesData },
+      gfg: { label: "GFG SUBMISSIONS", color: PLATFORM_META.gfg.color, rgb: PLATFORM_META.gfg.rgb, data: gfgData },
     } satisfies Record<PlatformKey, { label: string; color: string; rgb: string; data: HeatmapDay[] }>,
   };
 }

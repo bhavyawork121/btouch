@@ -11,7 +11,7 @@ export default function DashboardError({
   return (
     <RouteErrorState
       title="Dashboard failed to load."
-      description="The authenticated dashboard hit an unexpected error. Retry the route to request fresh server data."
+      message="The authenticated dashboard hit an unexpected error. Retry the route to request fresh server data."
       onAction={reset}
     />
   );

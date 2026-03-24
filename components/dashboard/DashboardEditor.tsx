@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { FlipCard } from "@/components/card/FlipCard";
+import { dashboardCopy } from "@/lib/copy";
 import { accentOptions, resolveAccent } from "@/lib/theme";
 import type { CardData } from "@/types/card";
 import type { SaveCardConfigResult } from "@/app/dashboard/actions";
@@ -90,7 +91,7 @@ export function DashboardEditor({ preview }: DashboardEditorProps) {
             <input
               className={inputClassName}
               name="displayName"
-              value={previewState.data.profile.displayName}
+              value={previewState.data.profile.displayName ?? ""}
               onChange={(event) =>
                 setPreviewState((current) => ({
                   ...current,
@@ -108,7 +109,7 @@ export function DashboardEditor({ preview }: DashboardEditorProps) {
             <input
               className={inputClassName}
               name="headline"
-              value={previewState.data.profile.headline}
+              value={previewState.data.profile.headline ?? ""}
               onChange={(event) =>
                 setPreviewState((current) => ({
                   ...current,
@@ -125,7 +126,7 @@ export function DashboardEditor({ preview }: DashboardEditorProps) {
             <textarea
               className={`${inputClassName} min-h-28 resize-none`}
               name="bio"
-              value={previewState.data.profile.bio}
+              value={previewState.data.profile.bio ?? ""}
               onChange={(event) =>
                 setPreviewState((current) => ({
                   ...current,
@@ -335,7 +336,7 @@ export function DashboardEditor({ preview }: DashboardEditorProps) {
               {notice ? (
                 <p className={notice.kind === "success" ? "text-emerald-300" : "text-rose-300"}>{notice.message}</p>
               ) : (
-                <p className="text-slate-500">Changes save to your public card and refresh cache.</p>
+                <p className="text-slate-500">{dashboardCopy.platformHint}</p>
               )}
             </div>
             <div className="flex gap-3">
@@ -372,7 +373,7 @@ export function DashboardEditor({ preview }: DashboardEditorProps) {
       </section>
 
       <aside className="flex flex-1 justify-center lg:sticky lg:top-10">
-        <FlipCard data={previewState.data} username={previewState.username || "preview"} />
+        <FlipCard data={previewState.data} username={previewState.username} />
       </aside>
     </main>
   );

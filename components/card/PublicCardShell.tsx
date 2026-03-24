@@ -6,9 +6,20 @@ import { FlipCard } from "@/components/card/FlipCard";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { QRExport } from "@/components/ui/QRExport";
 import { useCardData } from "@/hooks/useCardData";
+import { publicCopy } from "@/lib/copy";
 import { getThemeSurface, resolveTheme } from "@/lib/theme";
 import { useEffect, useState } from "react";
 import type { CardData, PlatformName } from "@/types/card";
+
+const bannerMessages = {
+  stale: "Some stats may be outdated · last updated {time}",
+  error: "Could not load stats for: {platforms}",
+  partial: "{n} of {total} platforms loaded",
+} as const;
+
+function getBannerMessage(type: keyof typeof bannerMessages, vars: Record<string, string>) {
+  return bannerMessages[type].replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? "");
+}
 
 interface PublicCardShellProps {
   initialData: CardData;
@@ -77,7 +88,7 @@ export function PublicCardShell({ initialData, shareUrl, username }: PublicCardS
           </p>
           <h1 className="font-display text-xl font-semibold">btouch.dev/{username}</h1>
           <p className="mt-1 text-sm" style={{ color: surface.muted }}>
-            {isFetching ? "Refreshing live stats..." : "Shareable profile with live platform data."}
+            {isFetching ? publicCopy.loading : publicCopy.ready}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -87,7 +98,7 @@ export function PublicCardShell({ initialData, shareUrl, username }: PublicCardS
 
       {error ? (
         <div className="flex w-full max-w-xl items-center justify-between gap-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-          <p>Live refresh failed. Showing the last available card data.</p>
+          <p>{publicCopy.refreshFailed}</p>
           <button
             type="button"
             onClick={() => void refetch()}
@@ -103,7 +114,7 @@ export function PublicCardShell({ initialData, shareUrl, username }: PublicCardS
           className="w-full max-w-xl rounded-2xl border px-4 py-3 text-sm backdrop-blur"
           style={{ borderColor: surface.border, background: surface.panel, color: surface.muted }}
         >
-          <p>Some platforms are stale or unavailable: {card.meta.stalePlatforms.join(", ")}.</p>
+          <p>{getBannerMessage("error", { platforms: card.meta.stalePlatforms.join(", ") })}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {retryablePlatforms.map(([platform, value]) => (
               <button
