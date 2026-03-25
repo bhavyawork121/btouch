@@ -25,13 +25,15 @@ interface PublicCardShellProps {
   initialData: CardData;
   shareUrl: string;
   username: string;
+  isOwner: boolean;
 }
 
-export function PublicCardShell({ initialData, shareUrl, username }: PublicCardShellProps) {
+export function PublicCardShell({ initialData, shareUrl, username, isOwner }: PublicCardShellProps) {
   const queryClient = useQueryClient();
   const { data, error, isFetching, isPending, refetch } = useCardData(username, initialData);
   const [retryingPlatform, setRetryingPlatform] = useState<PlatformName | null>(null);
   const [retryMessage, setRetryMessage] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const card = data ?? initialData;
   const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">(
     card.appearance.theme === "light" ? "light" : "dark",
@@ -64,6 +66,16 @@ export function PublicCardShell({ initialData, shareUrl, username }: PublicCardS
     }
   }
 
+  async function copyCardUrl() {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  }
+
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const updateTheme = () => setResolvedTheme(resolveTheme(card.appearance.theme, mediaQuery.matches));
@@ -75,9 +87,124 @@ export function PublicCardShell({ initialData, shareUrl, username }: PublicCardS
 
   return (
     <main
-      className="page-bg flex min-h-screen w-full flex-col items-center justify-center gap-8 px-6 py-12"
-      style={{ color: surface.foreground }}
+      className="page-bg flex min-h-screen w-full flex-col items-center justify-center gap-8 px-6 py-12 page-enter"
+      style={{ color: surface.foreground, paddingTop: isOwner ? 72 : 24, paddingBottom: isOwner ? 72 : 72 }}
     >
+      {isOwner ? (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            background: "rgba(6,8,16,0.92)",
+            backdropFilter: "blur(12px)",
+            borderBottom: "0.5px solid rgba(255,255,255,0.06)",
+            padding: "10px 20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            zIndex: 40,
+          }}
+        >
+          <span style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: "0.08em" }}>
+            viewing your public card
+          </span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => void copyCardUrl()}
+              style={{
+                fontFamily: "var(--font-space-mono), monospace",
+                fontSize: 9,
+                background: "rgba(255,255,255,0.04)",
+                border: "0.5px solid rgba(255,255,255,0.1)",
+                borderRadius: 6,
+                padding: "5px 12px",
+                color: "rgba(255,255,255,0.4)",
+                cursor: "pointer",
+                letterSpacing: "0.06em",
+              }}
+            >
+              {copied ? "✓ copied" : "copy link"}
+            </button>
+            <a
+              href="/dashboard"
+              style={{
+                fontFamily: "var(--font-space-mono), monospace",
+                fontSize: 9,
+                background: "rgba(99,102,241,0.1)",
+                border: "0.5px solid rgba(99,102,241,0.25)",
+                borderRadius: 6,
+                padding: "5px 12px",
+                color: "#a5b4fc",
+                textDecoration: "none",
+                letterSpacing: "0.06em",
+              }}
+            >
+              edit card
+            </a>
+          </div>
+        </div>
+      ) : null}
+
+      {!isOwner ? (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: "rgba(6,8,16,0.92)",
+            backdropFilter: "blur(12px)",
+            borderTop: "0.5px solid rgba(255,255,255,0.07)",
+            padding: "12px 20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            zIndex: 40,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: 5,
+                background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <span style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: 9, fontWeight: 700, color: "#fff" }}>b</span>
+            </div>
+            <span style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: 9, color: "rgba(255,255,255,0.3)", letterSpacing: "0.06em" }}>
+              made with btouch
+            </span>
+          </div>
+          <a
+            href="/"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: "rgba(99,102,241,0.15)",
+              border: "0.5px solid rgba(99,102,241,0.3)",
+              borderRadius: 6,
+              padding: "6px 14px",
+              fontFamily: "var(--font-space-mono), monospace",
+              fontSize: 9,
+              color: "#a5b4fc",
+              textDecoration: "none",
+              letterSpacing: "0.08em",
+            }}
+          >
+            get your card →
+          </a>
+        </div>
+      ) : null}
+
       <div
         className="flex w-full max-w-xl flex-col gap-3 rounded-2xl border px-4 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between"
         style={{ borderColor: surface.border, background: surface.panel }}
