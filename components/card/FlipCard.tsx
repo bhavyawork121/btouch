@@ -44,23 +44,31 @@ function isInteractiveTarget(target: EventTarget | null) {
     : false;
 }
 
-export function FlipCard({ data, username }: { data: CardData; username: string }) {
-  const [viewMode, setViewMode] = useState<ViewMode>("compact");
+export function FlipCard({
+  data,
+  username,
+  initialViewMode = "compact",
+}: {
+  data: CardData;
+  username: string;
+  initialViewMode?: ViewMode;
+}) {
+  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
   const [isFlipped, setIsFlipped] = useState(false);
   const [particles, setParticles] = useState<Particle[]>([]);
-  const [frontScrollIndex, setFrontScrollIndex] = useState(0);
-  const [backScrollIndex, setBackScrollIndex] = useState(0);
   const [showFlipHint, setShowFlipHint] = useState(false);
   const [hasTappedCard, setHasTappedCard] = useState(false);
   const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">(
     data.appearance.theme === "light" ? "light" : "dark",
   );
   const [sceneSize, setSceneSize] = useState({ width: 400, height: 240 });
+  const [isMobile, setIsMobile] = useState(false);
   const [fullHeight, setFullHeight] = useState(0);
   const stretchedRef = useRef<HTMLDivElement | null>(null);
   const stretchedFrontRef = useRef<HTMLDivElement | null>(null);
   const stretchedBackRef = useRef<HTMLDivElement | null>(null);
   const particleId = useRef(0);
+  const touchStartY = useRef(0);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
@@ -76,6 +84,7 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
   useEffect(() => {
     const updateSceneSize = () => {
       const viewportWidth = window.innerWidth;
+      setIsMobile(viewportWidth < 768);
       if (viewportWidth <= 480) {
         const width = Math.max(240, viewportWidth - 32);
         setSceneSize({ width, height: width / 1.6667 });
@@ -202,7 +211,6 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
     [toggleFlipLock],
   );
 
-  const activeScrollIndex = isFlipped ? backScrollIndex : frontScrollIndex;
   const fullWidth = "100%";
 
   return (
@@ -222,7 +230,24 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
               event.currentTarget.style.setProperty("--mouse-x", x);
               event.currentTarget.style.setProperty("--mouse-y", y);
             }}
-            onClick={handleCardTap}
+            onClick={isMobile ? undefined : handleCardTap}
+            onTouchStart={
+              isMobile
+                ? (event) => {
+                    touchStartY.current = event.touches[0]?.clientY ?? 0;
+                  }
+                : undefined
+            }
+            onTouchEnd={
+              isMobile
+                ? (event) => {
+                    const dy = Math.abs((event.changedTouches[0]?.clientY ?? 0) - touchStartY.current);
+                    if (dy < 10) {
+                      toggleFlipLock();
+                    }
+                  }
+                : undefined
+            }
             onKeyDown={(event) => {
               if (event.key !== "Enter" && event.key !== " ") {
                 return;
@@ -254,7 +279,6 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
               >
                 <CardFront
                   data={data}
-                  onScrollIndexChange={setFrontScrollIndex}
                 />
                 {!isFlipped && showFlipHint ? (
                   <div
@@ -305,7 +329,7 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
                   transform: "rotateY(180deg)",
                 }}
               >
-                <CardBack data={data} onScrollIndexChange={setBackScrollIndex} />
+                <CardBack data={data} />
               </motion.div>
             </motion.div>
 
@@ -323,24 +347,29 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
             </AnimatePresence>
           </div>
 
-          <div className="flex items-center justify-center gap-1">
-            {Array.from({ length: 3 }, (_, index) => {
-              const isActive = index === activeScrollIndex;
-              return (
-                <div
-                  key={index}
-                  style={{
-                    width: isActive ? 16 : 6,
-                    height: 3,
-                    borderRadius: 2,
-                    background: isActive ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.15)",
-                    transition: "all .3s",
-                  }}
-                />
-              );
-            })}
-          </div>
-        </>
+          {viewMode === "compact" ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 5, justifyContent: "center", marginTop: 12 }}>
+              <div
+                style={{
+                  height: 3,
+                  borderRadius: 2,
+                  transition: "all 0.3s",
+                  background: !isFlipped ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.15)",
+                  width: !isFlipped ? 20 : 8,
+                }}
+              />
+              <div
+                style={{
+                  height: 3,
+                  borderRadius: 2,
+                  transition: "all 0.3s",
+                  background: isFlipped ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.15)",
+                  width: isFlipped ? 20 : 8,
+                }}
+              />
+            </div>
+          ) : null}
+      </>
       ) : (
         <div
           ref={stretchedRef}
@@ -444,14 +473,14 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
 
       <div
         style={{
-          display: "flex",
+          display: "inline-flex",
           alignItems: "center",
-          gap: 4,
+          gap: 5,
           background: "rgba(255,255,255,0.04)",
-          border: "0.5px solid rgba(255,255,255,0.09)",
-          borderRadius: 24,
+          border: "0.5px solid rgba(255,255,255,0.1)",
+          borderRadius: 20,
           padding: "4px 5px",
-          marginTop: 14,
+          marginTop: 10,
         }}
       >
         {(["compact", "full"] as const).map((mode) => (
@@ -461,13 +490,15 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
             onClick={() => setViewMode(mode)}
             style={{
               padding: "5px 16px",
-              borderRadius: 18,
-              border: viewMode === mode ? "0.5px solid rgba(99,102,241,0.45)" : "0.5px solid transparent",
-              background: viewMode === mode ? "rgba(99,102,241,0.22)" : "transparent",
-              color: viewMode === mode ? "#a5b4fc" : "rgba(255,255,255,0.28)",
+              borderRadius: 16,
+              border: "0.5px solid",
+              borderColor:
+                viewMode === mode ? "rgba(99,102,241,0.4)" : "transparent",
+              background: viewMode === mode ? "rgba(99,102,241,0.2)" : "transparent",
+              color: viewMode === mode ? "#a5b4fc" : "rgba(255,255,255,0.3)",
               fontSize: 11,
               fontFamily: "var(--font-space-mono)",
-              letterSpacing: "0.09em",
+              letterSpacing: "0.06em",
               cursor: "pointer",
               transition: "all 0.2s",
               whiteSpace: "nowrap",
@@ -488,17 +519,6 @@ export function FlipCard({ data, username }: { data: CardData; username: string 
           50% {
             opacity: 1;
             transform: scale(1.4);
-          }
-        }
-
-        @keyframes heatmapFade {
-          from {
-            opacity: 0;
-            transform: translateY(4px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
           }
         }
 
@@ -1305,17 +1325,32 @@ function StretchedBackContent({ data }: { data: CardData }) {
                 })}
               </div>
 
-              <div
+              <motion.div
                 key={activePlatform}
                 className="heatmap-grid"
+                initial={{ opacity: 0, scale: 0.985, x: 0, y: 0 }}
+                animate={{
+                  opacity: 1,
+                  scale: [0.988, 1.01, 1],
+                  x: [0, -1, 0.75, 0],
+                  y: [0, 0.35, -0.35, 0],
+                }}
+                transition={{ duration: 0.34, ease: "easeOut" }}
                 style={{
                   display: "grid",
                   gridTemplateColumns: `repeat(${numWeeks}, 1fr)`,
                   gridTemplateRows: "repeat(7, 1fr)",
                   gridAutoFlow: "column",
-                  gap: 2,
+                  gap: 2.5,
                   width: "100%",
-                  animation: "heatmapFade 0.3s ease-out",
+                  padding: 6,
+                  borderRadius: 16,
+                  background:
+                    "radial-gradient(120% 120% at 50% 20%, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.012) 55%, rgba(0,0,0,0.08) 100%)",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.045), inset 0 -1px 0 rgba(0,0,0,0.14), 0 10px 28px rgba(0,0,0,0.1)",
+                  overflow: "hidden",
+                  animation: "ambientDrift 10s ease-in-out infinite",
                 }}
               >
                 {trimmedData.map((day, index) => {
@@ -1335,17 +1370,20 @@ function StretchedBackContent({ data }: { data: CardData }) {
                         aspectRatio: "1 / 1",
                         width: "100%",
                         height: "auto",
-                        borderRadius: 1,
-                        background: `rgba(${active.rgb},${opacity.toFixed(2)})`,
+                        borderRadius: 5,
+                        background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.12), rgba(255,255,255,0.02) 35%, transparent 72%), linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.05)), rgba(${active.rgb},${opacity.toFixed(2)})`,
+                        boxShadow:
+                          "inset 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 1px rgba(255,255,255,0.04), 0 0 0 1px rgba(0,0,0,0.05)",
                         cursor: day.count > 0 ? "pointer" : "default",
-                        transition: "transform 0.1s, outline 0.1s",
-                        transform: hoveredDot?.index === index ? "scale(1.25)" : "scale(1)",
-                        outline: hoveredDot?.index === index ? `1px solid rgba(${active.rgb},0.6)` : "none",
+                        transition: "transform 0.2s ease, outline 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease",
+                        filter: hoveredDot?.index === index ? "saturate(1.1) brightness(1.08)" : "saturate(0.95) brightness(0.98)",
+                        transform: hoveredDot?.index === index ? "scale(1.2)" : "scale(1)",
+                        outline: hoveredDot?.index === index ? `1px solid rgba(${active.rgb},0.55)` : "none",
                       }}
                     />
                   );
                 })}
-              </div>
+              </motion.div>
             </div>
           </div>
 
@@ -1356,14 +1394,15 @@ function StretchedBackContent({ data }: { data: CardData }) {
                 bottom: "calc(100% + 6px)",
                 left: `${Math.min(Math.max(Math.floor(hoveredDot.index / 7) * (100 / numWeeks), 8), 80)}%`,
                 transform: "translateX(-50%)",
-                background: "#1a1f2e",
-                border: `0.5px solid rgba(${active.rgb},0.35)`,
-                borderRadius: 6,
-                padding: "6px 10px",
+                background: "rgba(15,18,26,0.9)",
+                border: `0.5px solid rgba(${active.rgb},0.26)`,
+                borderRadius: 10,
+                padding: "7px 11px",
                 whiteSpace: "nowrap",
                 zIndex: 20,
                 pointerEvents: "none",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                boxShadow: "0 8px 22px rgba(0,0,0,0.34)",
+                backdropFilter: "blur(10px)",
               }}
             >
               <div style={{ fontFamily: monoFont, fontSize: 8.5, color: `rgba(${active.rgb},0.7)`, letterSpacing: "0.06em", marginBottom: 3 }}>

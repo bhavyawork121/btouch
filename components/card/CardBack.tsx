@@ -14,8 +14,12 @@ type IdleBrowserWindow = Window &
   };
 
 const heatmapVariants = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.008 } },
+  hidden: { opacity: 0, scale: 0.985 },
+  show: {
+    opacity: 1,
+    scale: 1,
+    transition: { staggerChildren: 0.008, duration: 0.35, ease: "easeOut" },
+  },
 };
 
 function getHeatmapColor(index: number): string {
@@ -106,22 +110,26 @@ export function CardBack({
         padding: "12px 14px 10px",
         overflow: "hidden",
         width: "100%",
+        minHeight: 0,
         boxSizing: "border-box",
         borderColor: "var(--card-border)",
         background: "#08090e",
       }}
     >
         <div
-          ref={scrollRef}
-          data-scroll-face="back"
+        ref={scrollRef}
+        data-scroll-face="back"
         onMouseDown={(event) => event.stopPropagation()}
         style={{
+          flex: 1,
+          minHeight: 0,
           width: "100%",
-          height: "100%",
-          overflowY: "scroll",
+          overflowY: "auto",
           overflowX: "hidden",
           scrollBehavior: "smooth",
           WebkitOverflowScrolling: "touch",
+          overscrollBehavior: "contain",
+          touchAction: "pan-y",
           boxSizing: "border-box",
           msOverflowStyle: "none",
           scrollbarWidth: "none",
@@ -173,13 +181,28 @@ export function CardBack({
 
         <div
           style={{
-            background: "rgba(255,255,255,.025)",
-            border: "0.5px solid rgba(255,255,255,.055)",
-            borderRadius: 8,
-            padding: "9px 10px",
+            background:
+              "radial-gradient(120% 120% at 50% 20%, rgba(167,139,250,0.08) 0%, rgba(255,255,255,0.025) 40%, rgba(255,255,255,0.012) 100%)",
+            border: "0.5px solid rgba(255,255,255,.05)",
+            borderRadius: 14,
+            padding: "11px 11px 10px",
             marginBottom: 8,
+            position: "relative",
+            overflow: "hidden",
+            boxShadow:
+              "inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -1px 0 rgba(0,0,0,0.18), 0 10px 30px rgba(0,0,0,0.14)",
+            animation: "heatmapBreath 8s ease-in-out infinite",
           }}
         >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "radial-gradient(closest-side at 50% 50%, transparent 60%, rgba(8,9,14,0.24) 100%)",
+              pointerEvents: "none",
+            }}
+          />
           <div
             style={{
               fontSize: 8.5,
@@ -199,14 +222,22 @@ export function CardBack({
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(13, 1fr)",
-              gap: 2.5,
+              gap: 3.5,
+              position: "relative",
+              zIndex: 1,
             }}
           >
             {Array.from({ length: 91 }, (_, index) => (
               <motion.div
                 key={index}
                 variants={{ hidden: { opacity: 0 }, show: { opacity: 1 } }}
-                style={{ aspectRatio: "1", borderRadius: 1.5, background: getHeatmapColor(index) }}
+                style={{
+                  aspectRatio: "1",
+                  borderRadius: 5,
+                  background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.14), rgba(255,255,255,0.02) 34%, transparent 70%), linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.05)), ${getHeatmapColor(index)}`,
+                  boxShadow:
+                    "inset 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 1px rgba(255,255,255,0.04), 0 0 0 1px rgba(0,0,0,0.06)",
+                }}
               />
             ))}
           </motion.div>

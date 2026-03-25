@@ -55,6 +55,8 @@ export function CardFront({
   const company = data.profile.currentCompany ?? "";
   const linkedInHandle = (linkedinUrl ?? "").replace("https://www.linkedin.com/in/", "");
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const touchStartYRef = useRef(0);
+  const touchStartScrollRef = useRef(0);
 
   useEffect(() => {
     const scrollElement = scrollRef.current;
@@ -96,6 +98,7 @@ export function CardFront({
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        minHeight: 0,
         boxSizing: "border-box",
         height: "100%",
         width: "100%",
@@ -104,13 +107,49 @@ export function CardFront({
       <div
         ref={scrollRef}
         data-scroll-face="front"
+        onWheelCapture={(event) => {
+          const scrollElement = scrollRef.current;
+          if (!scrollElement || scrollElement.scrollHeight <= scrollElement.clientHeight) {
+            return;
+          }
+
+          scrollElement.scrollTop += event.deltaY;
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+        onTouchStart={(event) => {
+          const scrollElement = scrollRef.current;
+          touchStartYRef.current = event.touches[0]?.clientY ?? 0;
+          touchStartScrollRef.current = scrollElement?.scrollTop ?? 0;
+        }}
+        onTouchMove={(event) => {
+          const scrollElement = scrollRef.current;
+          if (!scrollElement) {
+            return;
+          }
+
+          const touchY = event.touches[0]?.clientY ?? touchStartYRef.current;
+          const deltaY = touchStartYRef.current - touchY;
+          if (Math.abs(deltaY) < 1) {
+            return;
+          }
+
+          scrollElement.scrollTop = touchStartScrollRef.current + deltaY;
+          event.preventDefault();
+        }}
         style={{
-          width: "100%",
+          flex: 1,
           height: "100%",
-          overflowY: "scroll",
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+          overflowY: "auto",
           overflowX: "hidden",
           scrollBehavior: "smooth",
           WebkitOverflowScrolling: "touch",
+          overscrollBehavior: "contain",
+          touchAction: "pan-y",
           boxSizing: "border-box",
           msOverflowStyle: "none",
           scrollbarWidth: "none",
@@ -168,6 +207,27 @@ export function CardFront({
               <span style={{ color: "#0A66C2", fontSize: 10 }}>in</span>
               {linkedInHandle}
             </motion.div>
+            {(role || company) ? (
+              <motion.div
+                variants={item}
+                className="mt-[6px] flex items-center gap-[6px] text-[9px]"
+                style={{
+                  fontFamily: "var(--font-space-mono)",
+                  color: "rgba(255,255,255,0.58)",
+                  letterSpacing: "0.05em",
+                  lineHeight: 1.3,
+                  width: "fit-content",
+                  maxWidth: "100%",
+                }}
+              >
+                <BriefcaseBusiness className="h-[11px] w-[11px] shrink-0" style={{ color: "var(--card-accent)" }} />
+                <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {role}
+                  {role && company ? " · " : ""}
+                  {company}
+                </span>
+              </motion.div>
+            ) : null}
           </div>
           <motion.button
             variants={item}
@@ -212,7 +272,7 @@ export function CardFront({
         <div
           className="text-[8.5px] uppercase"
           style={{
-            color: "rgba(255,255,255,0.2)",
+            color: "rgba(255,255,255,0.24)",
             fontFamily: "var(--font-space-mono)",
             letterSpacing: "0.14em",
             marginBottom: 4,
@@ -230,8 +290,8 @@ export function CardFront({
           }}
         >
           <BriefcaseBusiness className="h-[14px] w-[14px] shrink-0" style={{ color: "var(--card-accent)" }} />
-          <span className="min-w-0 flex-1 text-[10px] font-medium" style={{ color: "#c8d8f0" }}>
-          {role ? role : null}
+          <span className="min-w-0 flex-1 text-[10px] font-medium" style={{ color: "#dbe7ff" }}>
+            {role ? role : "open to work"}
           </span>
           {company ? (
             <span className="text-[10px] font-medium" style={{ color: "#f89f1b", flexShrink: 0, fontFamily: "var(--font-space-mono)" }}>
