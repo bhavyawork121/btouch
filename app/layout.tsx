@@ -27,7 +27,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             "--font-space-mono": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
           } as CSSProperties
         }
-        className="bg-surface text-white antialiased"
+        className="text-white antialiased"
       >
         <Providers>{children}</Providers>
       </body>
