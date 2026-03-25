@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import type { CardData } from "@/types/card";
 
 type Step = 1 | 2;
 type PlatformKey = "github" | "leetcode" | "codeforces" | "gfg";
@@ -66,13 +67,13 @@ const platforms: Array<{
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
-  background: "rgba(255,255,255,0.025)",
-  border: "0.5px solid rgba(255,255,255,0.07)",
+  background: "rgba(255,255,255,0.03)",
+  border: "0.5px solid rgba(255,255,255,0.1)",
   borderRadius: 8,
-  color: "rgba(255,255,255,0.55)",
+  color: "rgba(255,255,255,0.6)",
   fontFamily: monoFont,
-  fontSize: 9,
-  padding: "7px 10px",
+  fontSize: 10,
+  padding: "8px 11px",
   outline: "none",
   letterSpacing: "0.04em",
   boxSizing: "border-box",
@@ -92,7 +93,97 @@ const emptyFormData: FormState = {
   gfg: "",
 };
 
-export function OnboardingCard() {
+type GitHubPreview = {
+  avatar: string;
+  name: string;
+  repos: number;
+} | null;
+
+function validateLinkedIn(url: string) {
+  if (!url) return "empty";
+  if (url.includes("linkedin.com/in/")) return "valid";
+  if (url.length > 5) return "invalid";
+  return "typing";
+}
+
+function stripPlatformUrl(platform: string, value: string) {
+  const prefixes: Record<string, string[]> = {
+    github: ["https://github.com/", "github.com/"],
+    leetcode: ["https://leetcode.com/u/", "leetcode.com/u/", "https://leetcode.com/", "leetcode.com/"],
+    codeforces: ["https://codeforces.com/profile/", "codeforces.com/profile/"],
+    gfg: ["https://www.geeksforgeeks.org/user/", "geeksforgeeks.org/user/"],
+  };
+
+  let clean = value.trim();
+  for (const prefix of prefixes[platform] ?? []) {
+    if (clean.startsWith(prefix)) {
+      clean = clean.slice(prefix.length);
+    }
+  }
+
+  return clean.replace(/\/$/, "");
+}
+
+function buildPreviewData(formData: FormState, avatarPreview: string | null): CardData {
+  const linkedinUrl = formData.linkedinUrl.includes("linkedin.com") ? formData.linkedinUrl : null;
+  const skills = [
+    formData.github ? "GitHub" : null,
+    formData.leetcode ? "LeetCode" : null,
+    formData.codeforces ? "Codeforces" : null,
+    formData.gfg ? "GFG" : null,
+  ].filter((skill): skill is string => Boolean(skill));
+
+  return {
+    appearance: {
+      theme: "dark",
+      accentColor: "indigo",
+    },
+    profile: {
+      displayName: formData.name.trim() || null,
+      headline: formData.headline.trim() || null,
+      bio: formData.bio.trim() || null,
+      avatarUrl: avatarPreview,
+      linkedinUrl,
+      currentRole: formData.currentRole.trim() || null,
+      currentCompany: formData.currentCompany.trim() || null,
+      location: null,
+      skills,
+      openToWork: false,
+      experience: formData.currentRole.trim() && formData.currentCompany.trim()
+        ? [
+            {
+              role: formData.currentRole.trim(),
+              company: formData.currentCompany.trim(),
+              duration: null,
+              description: null,
+            },
+          ]
+        : [],
+    },
+    stats: {
+      github: null,
+      leetcode: null,
+      codeforces: null,
+      gfg: null,
+    },
+    config: {
+      username: formData.name.trim().toLowerCase().replace(/\s+/g, "-") || "preview",
+      showPlatforms: ["github", "leetcode", "codeforces", "gfg"],
+      theme: "dark",
+      accentColor: "indigo",
+    },
+    meta: {
+      lastRefreshed: new Date().toISOString(),
+      stalePlatforms: [],
+    },
+  };
+}
+
+interface OnboardingCardProps {
+  onDataChange?: (data: CardData) => void;
+}
+
+export function OnboardingCard({ onDataChange }: OnboardingCardProps) {
   const router = useRouter();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const transitionTimeoutRef = useRef<number | null>(null);
@@ -102,6 +193,7 @@ export function OnboardingCard() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [formData, setFormData] = useState<FormState>(emptyFormData);
+  const [githubPreview, setGithubPreview] = useState<GitHubPreview>(null);
 
   useEffect(() => {
     return () => {
@@ -111,8 +203,42 @@ export function OnboardingCard() {
     };
   }, []);
 
-  const linkedinIsValid = formData.linkedinUrl.includes("linkedin.com");
-  const canContinue = formData.name.trim().length >= 2 && linkedinIsValid;
+  const linkedinStatus = validateLinkedIn(formData.linkedinUrl);
+  const canContinue = formData.name.trim().length >= 2 && linkedinStatus === "valid";
+
+  const previewData = useMemo(() => buildPreviewData(formData, avatarPreview), [avatarPreview, formData]);
+
+  useEffect(() => {
+    onDataChange?.(previewData);
+  }, [onDataChange, previewData]);
+
+  useEffect(() => {
+    setGithubPreview(null);
+
+    if (!formData.github || formData.github.length < 2) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const response = await fetch(`https://api.github.com/users/${formData.github}`);
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as { avatar_url: string; name: string | null; login: string; public_repos: number };
+        setGithubPreview({
+          avatar: data.avatar_url,
+          name: data.name ?? data.login,
+          repos: data.public_repos,
+        });
+      } catch {
+        setGithubPreview(null);
+      }
+    }, 600);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [formData.github]);
 
   const triggerAvatarUpload = () => avatarInputRef.current?.click();
 
@@ -184,10 +310,10 @@ export function OnboardingCard() {
         border: "0.5px solid rgba(255,255,255,0.08)",
         borderRadius: 18,
         padding: "20px 20px 18px",
-        width: 400,
-        maxWidth: "100%",
+        width: "100%",
+        maxWidth: 380,
         boxSizing: "border-box",
-        boxShadow: "0 0 0 0.5px rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.4), 0 0 60px rgba(99,102,241,0.06)",
+        boxShadow: "0 0 0 0.5px rgba(255,255,255,0.06), 0 20px 60px rgba(0,0,0,0.5), 0 0 80px rgba(99,102,241,0.08)",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -303,12 +429,13 @@ export function OnboardingCard() {
               <input type="file" accept="image/*" ref={avatarInputRef} onChange={handleAvatarUpload} style={{ display: "none" }} />
 
               <div style={{ flex: 1 }}>
-                <input
-                  type="text"
-                  placeholder="Your full name"
-                  value={formData.name}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
-                  style={{
+              <input
+                type="text"
+                placeholder="Your full name"
+                value={formData.name}
+                onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
+                className="btouch-input"
+                style={{
                     width: "100%",
                     background: "transparent",
                     border: "none",
@@ -323,11 +450,12 @@ export function OnboardingCard() {
                   }}
                 />
                 <input
-                  type="text"
-                  placeholder="Title · Company"
-                  value={formData.headline}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, headline: event.target.value }))}
-                  style={{
+                type="text"
+                placeholder="Title · Company"
+                value={formData.headline}
+                onChange={(event) => setFormData((prev) => ({ ...prev, headline: event.target.value }))}
+                className="btouch-input"
+                style={{
                     width: "100%",
                     background: "transparent",
                     border: "none",
@@ -350,7 +478,12 @@ export function OnboardingCard() {
                 alignItems: "center",
                 gap: 8,
                 background: "rgba(10,102,194,0.06)",
-                border: linkedinIsValid || !formData.linkedinUrl ? "0.5px solid rgba(10,102,194,0.15)" : "0.5px solid rgba(239,68,68,0.3)",
+                border:
+                  linkedinStatus === "invalid"
+                    ? "0.5px solid rgba(239,68,68,0.3)"
+                    : linkedinStatus === "valid"
+                      ? "0.5px solid rgba(34,197,94,0.2)"
+                      : "0.5px solid rgba(10,102,194,0.18)",
                 borderRadius: 8,
                 padding: "8px 10px",
               }}
@@ -371,6 +504,7 @@ export function OnboardingCard() {
                 placeholder="linkedin.com/in/your-handle"
                 value={formData.linkedinUrl}
                 onChange={(event) => setFormData((prev) => ({ ...prev, linkedinUrl: event.target.value }))}
+                className="btouch-input"
                 style={{
                   flex: 1,
                   background: "transparent",
@@ -382,36 +516,58 @@ export function OnboardingCard() {
                   letterSpacing: "0.03em",
                 }}
               />
-              {linkedinIsValid && <span style={{ fontSize: 10, color: "#22c55e" }}>✓</span>}
+              {linkedinStatus === "valid" && <span style={{ fontSize: 10, color: "#22c55e" }}>✓</span>}
             </div>
-            {formData.linkedinUrl && !linkedinIsValid ? (
-              <div style={{ marginTop: -4, fontFamily: monoFont, fontSize: 8, color: "#f87171", letterSpacing: "0.04em" }}>
-                ✗ add full linkedin URL
+            {linkedinStatus === "invalid" ? (
+              <div style={{ fontFamily: monoFont, fontSize: 8, color: "rgba(239,68,68,0.7)", letterSpacing: "0.06em", marginTop: 4 }}>
+                paste your full linkedin.com/in/handle URL
+              </div>
+            ) : linkedinStatus === "valid" ? (
+              <div style={{ fontFamily: monoFont, fontSize: 8, color: "rgba(34,197,94,0.7)", letterSpacing: "0.06em", marginTop: 4 }}>
+                {"\u2713 valid linkedin URL"}
               </div>
             ) : null}
 
-            <textarea
-              placeholder="Short bio — what you build, how you think..."
-              value={formData.bio}
-              onChange={(event) => setFormData((prev) => ({ ...prev, bio: event.target.value }))}
-              rows={2}
-              style={{
-                width: "100%",
-                background: "rgba(255,255,255,0.02)",
-                border: "0.5px solid rgba(255,255,255,0.07)",
-                borderRadius: 8,
-                color: "rgba(255,255,255,0.4)",
-                fontFamily: groteskFont,
-                fontWeight: 300,
-                fontSize: 11,
-                lineHeight: 1.65,
-                padding: "8px 10px",
-                outline: "none",
-                resize: "none",
-                boxSizing: "border-box",
-                letterSpacing: "0.01em",
-              }}
-            />
+            <div style={{ position: "relative" }}>
+              <textarea
+                placeholder="Short bio — what you build, how you think..."
+                value={formData.bio}
+                maxLength={200}
+                onChange={(event) => setFormData((prev) => ({ ...prev, bio: event.target.value }))}
+                rows={2}
+                className="btouch-input"
+                style={{
+                  width: "100%",
+                  background: "rgba(255,255,255,0.02)",
+                  border: "0.5px solid rgba(255,255,255,0.07)",
+                  borderRadius: 8,
+                  color: "rgba(255,255,255,0.4)",
+                  fontFamily: groteskFont,
+                  fontWeight: 300,
+                  fontSize: 11,
+                  lineHeight: 1.65,
+                  padding: "8px 10px 18px",
+                  outline: "none",
+                  resize: "none",
+                  boxSizing: "border-box",
+                  letterSpacing: "0.01em",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 6,
+                  right: 8,
+                  fontFamily: monoFont,
+                  fontSize: 7.5,
+                  color: formData.bio.length > 180 ? "rgba(239,68,68,0.6)" : "rgba(255,255,255,0.15)",
+                  letterSpacing: "0.06em",
+                  pointerEvents: "none",
+                }}
+              >
+                {formData.bio.length}/200
+              </div>
+            </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <input
@@ -419,6 +575,7 @@ export function OnboardingCard() {
                 placeholder="Current role"
                 value={formData.currentRole}
                 onChange={(event) => setFormData((prev) => ({ ...prev, currentRole: event.target.value }))}
+                className="btouch-input"
                 style={inputStyle}
               />
               <input
@@ -426,6 +583,7 @@ export function OnboardingCard() {
                 placeholder="Company"
                 value={formData.currentCompany}
                 onChange={(event) => setFormData((prev) => ({ ...prev, currentCompany: event.target.value }))}
+                className="btouch-input"
                 style={inputStyle}
               />
             </div>
@@ -435,14 +593,14 @@ export function OnboardingCard() {
               disabled={!canContinue || isTransitioning}
               style={{
                 width: "100%",
-                padding: "9px 0",
-                background: canContinue ? "rgba(99,102,241,0.15)" : "rgba(255,255,255,0.04)",
+                padding: "10px 0",
+                background: canContinue ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.04)",
                 border: "0.5px solid",
-                borderColor: canContinue ? "rgba(99,102,241,0.35)" : "rgba(255,255,255,0.08)",
+                borderColor: canContinue ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.08)",
                 borderRadius: 8,
                 fontFamily: monoFont,
                 fontSize: 10,
-                color: canContinue ? "rgba(165,180,252,0.8)" : "rgba(255,255,255,0.2)",
+                color: canContinue ? "rgba(165,180,252,0.85)" : "rgba(255,255,255,0.2)",
                 cursor: canContinue ? "pointer" : "not-allowed",
                 letterSpacing: "0.1em",
                 transition: "all 0.2s",
@@ -494,14 +652,20 @@ export function OnboardingCard() {
                 >
                   {platform.prefix}
                 </span>
-                <input
-                  type="text"
-                  placeholder={platform.placeholder}
-                  value={formData[platform.key]}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, [platform.key]: event.target.value }))}
-                  style={{
-                    flex: 1,
-                    background: "transparent",
+              <input
+                type="text"
+                placeholder={platform.placeholder}
+                value={formData[platform.key]}
+                onChange={(event) => setFormData((prev) => ({ ...prev, [platform.key]: event.target.value }))}
+                onBlur={(event) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    [platform.key]: stripPlatformUrl(platform.key, event.target.value),
+                  }))
+                }
+                style={{
+                  flex: 1,
+                  background: "transparent",
                     border: "none",
                     color: platform.color,
                     fontFamily: monoFont,
@@ -509,11 +673,40 @@ export function OnboardingCard() {
                     outline: "none",
                     letterSpacing: "0.03em",
                     minWidth: 0,
-                  }}
-                />
+                }}
+              />
                 {formData[platform.key] ? <span style={{ fontSize: 10, color: "#22c55e", flexShrink: 0 }}>✓</span> : null}
               </div>
             ))}
+
+            {githubPreview ? (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  background: "rgba(167,139,250,0.06)",
+                  border: "0.5px solid rgba(167,139,250,0.15)",
+                  borderRadius: 6,
+                  padding: "6px 10px",
+                  marginTop: 4,
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={githubPreview.avatar} alt="" style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0 }} />
+                <span
+                  style={{
+                    fontFamily: monoFont,
+                    fontSize: 9,
+                    color: "#a78bfa",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  {githubPreview.name} · {githubPreview.repos} repos
+                </span>
+                <span style={{ fontSize: 10, color: "rgba(34,197,94,0.7)", marginLeft: "auto" }}>✓</span>
+              </div>
+            ) : null}
 
             <div
               style={{
@@ -577,6 +770,11 @@ export function OnboardingCard() {
         input:focus,
         textarea:focus {
           border-color: rgba(99, 102, 241, 0.3) !important;
+        }
+
+        .btouch-input:focus {
+          border-color: rgba(99, 102, 241, 0.4) !important;
+          background: rgba(99, 102, 241, 0.04) !important;
         }
       `}</style>
     </div>

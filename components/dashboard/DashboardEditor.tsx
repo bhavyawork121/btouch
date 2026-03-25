@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { FlipCard } from "@/components/card/FlipCard";
+import { LivePreviewCard } from "@/components/card/LivePreviewCard";
 import { dashboardCopy } from "@/lib/copy";
 import { accentOptions, resolveAccent } from "@/lib/theme";
 import type { CardData } from "@/types/card";
@@ -39,6 +39,7 @@ export function DashboardEditor({ preview }: DashboardEditorProps) {
   const [isSaving, startSaving] = useTransition();
   const [isRefreshing, startRefreshing] = useTransition();
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [toast, setToast] = useState<Notice | null>(null);
   const [previewState, setPreviewState] = useState(preview);
 
   function applyResult(result: SaveCardConfigResult) {
@@ -46,11 +47,63 @@ export function DashboardEditor({ preview }: DashboardEditorProps) {
       kind: result.ok ? "success" : "error",
       message: result.message,
     });
+    setToast({
+      kind: result.ok ? "success" : "error",
+      message: result.message,
+    });
+    window.setTimeout(() => setToast(null), 2500);
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-7xl flex-col gap-10 px-6 py-10 lg:flex-row lg:items-start">
-      <section className="w-full max-w-2xl rounded-[32px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+    <main
+      className="page-enter mx-auto grid min-h-screen max-w-[1400px] grid-cols-1 gap-8 px-6 py-10 lg:grid-cols-[240px_minmax(0,1fr)_380px]"
+      style={{
+        backgroundColor: "#060810",
+        backgroundImage: "radial-gradient(ellipse 60% 40% at 50% 0%, rgba(99,102,241,0.1) 0%, transparent 50%)",
+      }}
+    >
+      <aside
+        className="hidden rounded-[24px] border border-white/6 bg-black/10 p-4 backdrop-blur-xl lg:flex lg:flex-col"
+        style={{ borderRight: "0.5px solid rgba(255,255,255,0.06)" }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, padding: "0 8px" }}>
+          <div style={{ width: 24, height: 24, borderRadius: 6, background: "linear-gradient(135deg,#4f46e5,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: 11, fontWeight: 700, color: "#fff" }}>b</span>
+          </div>
+          <span style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.5)", letterSpacing: "0.06em" }}>
+            btouch
+          </span>
+        </div>
+
+        {[
+          { icon: "▤", label: "My card", href: "/dashboard" },
+          { icon: "○", label: "Preview", href: previewState.username ? `/${previewState.username}` : "/dashboard" },
+          { icon: "⟳", label: "Refresh", href: "/api/refresh" },
+          { icon: "⚙", label: "Settings", href: "/dashboard" },
+        ].map((item) => (
+          <Link
+            key={item.label}
+            href={item.href}
+            className="rounded-lg px-3 py-2 transition hover:bg-white/5"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              textDecoration: "none",
+              fontFamily: "var(--font-space-mono), monospace",
+              fontSize: 10,
+              letterSpacing: "0.06em",
+              color: "rgba(255,255,255,0.35)",
+              background: "transparent",
+            }}
+          >
+            <span style={{ fontSize: 12 }}>{item.icon}</span>
+            {item.label}
+          </Link>
+        ))}
+      </aside>
+
+      <section className="w-full rounded-[32px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
             <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Dashboard</p>
@@ -65,6 +118,7 @@ export function DashboardEditor({ preview }: DashboardEditorProps) {
         </div>
 
         <form
+          id="dashboard-form"
           action={(formData) => {
             startSaving(async () => {
               const result = await saveCardConfig(formData);
@@ -348,11 +402,17 @@ export function DashboardEditor({ preview }: DashboardEditorProps) {
                     const response = await fetch("/api/refresh", { method: "POST" });
 
                     if (!response.ok) {
-                      setNotice({ kind: "error", message: "Cache refresh failed." });
+                      const message = "Cache refresh failed.";
+                      setNotice({ kind: "error", message });
+                      setToast({ kind: "error", message });
+                      window.setTimeout(() => setToast(null), 2500);
                       return;
                     }
 
-                    setNotice({ kind: "success", message: "Live stats refreshed." });
+                    const message = "Live stats refreshed.";
+                    setNotice({ kind: "success", message });
+                    setToast({ kind: "success", message });
+                    window.setTimeout(() => setToast(null), 2500);
                     router.refresh();
                   });
                 }}
@@ -372,9 +432,54 @@ export function DashboardEditor({ preview }: DashboardEditorProps) {
         </form>
       </section>
 
-      <aside className="flex flex-1 justify-center lg:sticky lg:top-10">
-        <FlipCard data={previewState.data} username={previewState.username} />
+      <aside className="flex flex-col items-center gap-4 lg:sticky lg:top-10 lg:self-start">
+        <div className="w-full rounded-[24px] border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+          <div className="mb-3 text-center font-mono text-[8.5px] uppercase tracking-[0.14em] text-white/20">live preview</div>
+          <LivePreviewCard previewData={previewState.data} />
+          <div className="mt-4 flex gap-2">
+            <button
+              type="submit"
+              form="dashboard-form"
+              className="flex-[2] rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-[10px] tracking-[0.1em] text-white/70 transition hover:bg-white/10"
+            >
+              save changes
+            </button>
+            <Link
+              href={previewState.username ? `/${previewState.username}` : "/dashboard"}
+              target="_blank"
+              className="flex-1 rounded-lg border border-white/10 px-3 py-2 text-center font-mono text-[10px] tracking-[0.1em] text-white/40 transition hover:bg-white/10"
+              style={{ textDecoration: "none" }}
+            >
+              view live ↗
+            </Link>
+          </div>
+        </div>
       </aside>
+
+      {toast ? (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 24,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: toast.kind === "success" ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
+            border: `0.5px solid ${toast.kind === "success" ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`,
+            borderRadius: 8,
+            padding: "10px 18px",
+            fontFamily: "var(--font-space-mono), monospace",
+            fontSize: 10,
+            color: toast.kind === "success" ? "rgba(134,239,172,0.9)" : "rgba(252,165,165,0.9)",
+            letterSpacing: "0.06em",
+            zIndex: 100,
+            whiteSpace: "nowrap",
+            animation: "toastIn 0.2s ease-out",
+          }}
+        >
+          {toast.kind === "success" ? "✓ " : "✗ "}
+          {toast.message}
+        </div>
+      ) : null}
     </main>
   );
 }
