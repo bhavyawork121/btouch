@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 export default async function HomePage() {
   const session = await auth();
   const isAuthed = !!session?.user;
-  const dashHref = isAuthed ? "/dashboard" : "/api/auth/signin?callbackUrl=/dashboard";
+  const dashHref = isAuthed ? "/dashboard" : "/auth?callbackUrl=/dashboard";
 
   return (
     <div

@@ -23,7 +23,8 @@ The repo currently includes:
 - Public shareable card route
 - Auth-protected dashboard for editing profile and handles
 - Prisma-backed data layer for users, cards, caches, and refresh logs
-- GitHub auth wiring with Prisma adapter
+- Google sign-in and manual email/password auth with Prisma adapter
+- Google sign-in and manual email/password signup
 - QR and copy-link share actions
 - Shared markdown tracking for completed work and next steps
 
@@ -61,8 +62,8 @@ UPSTASH_REDIS_REST_TOKEN="..."
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="..."
 
-GITHUB_CLIENT_ID="..."
-GITHUB_CLIENT_SECRET="..."
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
 
 GITHUB_TOKEN="..."
 

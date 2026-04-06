@@ -7,7 +7,7 @@ export default async function DashboardPage() {
   const session = await auth();
 
   if (!session?.user?.email) {
-    redirect(`/api/auth/signin?callbackUrl=${encodeURIComponent("/dashboard")}`);
+    redirect(`/auth?callbackUrl=${encodeURIComponent("/dashboard")}`);
   }
 
   const preview = await getDashboardPreviewData(session.user.email);
