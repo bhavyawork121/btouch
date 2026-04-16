@@ -9,58 +9,69 @@ datasource db {
 }
 
 model User {
-  id            String       @id @default(cuid())
-  githubId      String?      @unique
-  email         String       @unique
-  name          String
-  image         String?      @default("")
-  avatarUrl     String       @default("")
-  username      String       @unique
-  passwordHash  String?
-  emailVerified DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  card          CardConfig?
-  accounts      Account[]
-  sessions      Session[]
+  id             String          @id @default(cuid())
+  githubId       String?         @unique
+  email          String          @unique
+  name           String
+  image          String?         @default("")
+  avatarUrl      String          @default("")
+  username       String          @unique
+  passwordHash   String?
+  emailVerified  DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  card           CardConfig?
+  accounts       Account[]
+  sessions       Session[]
   authenticators Authenticator[]
-  refreshLogs   RefreshLog[]
+  refreshLogs    RefreshLog[]
 }
 
 model CardConfig {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  username  String   @unique
+  id       String @id @default(cuid())
+  userId   String @unique
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  username String @unique
 
   linkedinUrl    String   @default("")
   displayName    String   @default("")
   headline       String   @default("")
   bio            String   @default("")
+  tagline        String   @default("")
   avatarUrl      String   @default("")
   currentRole    String   @default("")
   currentCompany String   @default("")
   location       String   @default("")
   openToWork     Boolean  @default(false)
-  skills         String[]  @default([])
+  skills         String[] @default([])
 
-  githubHandle   String   @default("")
-  leetcodeHandle String   @default("")
-  cfHandle       String   @default("")
-  gfgHandle      String   @default("")
+  githubHandle   String @default("")
+  leetcodeHandle String @default("")
+  cfHandle       String @default("")
+  gfgHandle      String @default("")
 
-  githubData      Json?
-  githubCachedAt  DateTime?
-  leetcodeData    Json?
+  githubData       Json?
+  githubCachedAt   DateTime?
+  leetcodeData     Json?
   leetcodeCachedAt DateTime?
-  cfData          Json?
-  cfCachedAt      DateTime?
-  gfgData         Json?
-  gfgCachedAt     DateTime?
-  linkedinData    Json?
+  cfData           Json?
+  cfCachedAt       DateTime?
+  gfgData          Json?
+  gfgCachedAt      DateTime?
+  codechefData     Json?
+  codechefCachedAt DateTime?
+  linkedinData     Json?
   linkedinCachedAt DateTime?
 
-  experience Json[] @default([])
+  experience     Json[] @default([])
+  workExperience Json?
+
+  cardBackground   String  @default("gradient-aurora")
+  cardFont         String  @default("inter")
+  particleEnabled  Boolean @default(false)
+  codechefUsername String?
+  isOnboarded      Boolean @default(false)
+  cardTheme        String  @default("auto")
 
   theme         String   @default("dark")
   accentColor   String   @default("indigo")
@@ -121,8 +132,8 @@ model VerificationToken {
 }
 
 model Authenticator {
-  id                   String  @id @default(cuid())
-  credentialID         String  @unique
+  id                   String   @id @default(cuid())
+  credentialID         String   @unique
   userId               String
   providerAccountId    String
   credentialPublicKey  String
@@ -130,7 +141,7 @@ model Authenticator {
   credentialDeviceType String
   credentialBackedUp   Boolean
   transports           String[]
-  user                 User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, credentialID])
 }
