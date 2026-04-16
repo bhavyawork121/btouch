@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { PublicCardShell } from "@/components/card/PublicCardShell";
+import { FlipCard } from "@/components/card/FlipCard";
 import { auth } from "@/lib/auth";
 import { getCardDataByUsername } from "@/lib/card-service";
 
@@ -11,8 +11,13 @@ export default async function PublicCardPage({ params }: { params: { username: s
     notFound();
   }
 
-  const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/${params.username}`;
   const isOwner = Boolean(session?.user && (session.user as { cardUsername?: string | null }).cardUsername === params.username);
 
-  return <PublicCardShell initialData={card} shareUrl={shareUrl} username={params.username} isOwner={isOwner} />;
+  return (
+    <main className="min-h-screen bg-[#05060a] px-4 py-8 text-white sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center justify-center">
+        <FlipCard data={card} username={params.username} isOwner={isOwner} emptyStateHref="/dashboard" />
+      </div>
+    </main>
+  );
 }
