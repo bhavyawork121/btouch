@@ -27,6 +27,7 @@ const platformDataSchema: z.ZodType<PlatformData> = z.object({
   tertiaryMetric: metricSchema.optional(),
   lastFetched: z.string(),
   error: z.string().optional(),
+  dataUnavailable: z.boolean().optional(),
 });
 
 const errorResponseSchema = z.object({

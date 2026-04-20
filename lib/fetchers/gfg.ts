@@ -23,6 +23,20 @@ function toNumber(value: string | number | undefined) {
   return Number.isFinite(numeric) ? numeric : 0;
 }
 
+function buildFailure(username: string, error: string): GFGStats {
+  return {
+    status: "error",
+    handle: username,
+    score: 0,
+    streak: 0,
+    solved: 0,
+    instituteRank: "NA",
+    fetchedAt: new Date().toISOString(),
+    error,
+    dataUnavailable: true,
+  };
+}
+
 export async function fetchGfgStats(username: string): Promise<GFGStats> {
   try {
     const communityResponse = await fetchWithTimeout(
@@ -46,6 +60,13 @@ export async function fetchGfgStats(username: string): Promise<GFGStats> {
       const $ = load(html);
       const stats = $(".score_card_value").map((_, element) => $(element).text().trim()).get();
 
+      if (stats.length === 0 || stats.every((value) => value.length === 0)) {
+        return buildFailure(
+          username,
+          communityError instanceof Error ? communityError.message : "Community API unavailable",
+        );
+      }
+
       return {
         status: "stale",
         handle: username,
@@ -57,16 +78,7 @@ export async function fetchGfgStats(username: string): Promise<GFGStats> {
         error: communityError instanceof Error ? communityError.message : "Community API unavailable",
       };
     } catch (error) {
-      return {
-        status: "error",
-        handle: username,
-        score: 0,
-        streak: 0,
-        solved: 0,
-        instituteRank: "NA",
-        fetchedAt: new Date().toISOString(),
-        error: error instanceof Error ? error.message : "GFG fetch failed",
-      };
+      return buildFailure(username, error instanceof Error ? error.message : "GFG fetch failed");
     }
   }
 }

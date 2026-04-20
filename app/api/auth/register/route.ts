@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
 import { verifyPassword } from "@/lib/password";
 import { createUniqueUsername } from "@/lib/username";
 import { signupSchema } from "@/lib/auth-forms";
+
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   let payload: unknown;
@@ -43,7 +47,16 @@ export async function POST(request: Request) {
   const existingUsername = requestedUsername
     ? await prisma.user.findUnique({ where: { username: requestedUsername } })
     : null;
-  const existingCard = requestedUsername ? await prisma.cardConfig.findUnique({ where: { username: requestedUsername } }) : null;
+  const existingCard = requestedUsername
+    ? (
+        await prisma.$queryRaw<Array<{ username: string }>>(Prisma.sql`
+          SELECT "username"
+          FROM "CardConfig"
+          WHERE "username" = ${requestedUsername}
+          LIMIT 1
+        `)
+      ).length > 0
+    : null;
   if (existingUsername || existingCard) {
     return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
   }
@@ -62,15 +75,26 @@ export async function POST(request: Request) {
     },
   });
 
-  await prisma.cardConfig.create({
-    data: {
-      userId: user.id,
-      username: uniqueUsername,
-      displayName,
-      avatarUrl: "",
-      githubHandle: "",
-    },
-  });
+  await prisma.$executeRaw(Prisma.sql`
+    INSERT INTO "CardConfig" (
+      "id",
+      "userId",
+      "username",
+      "displayName",
+      "avatarUrl",
+      "githubHandle",
+      "updatedAt"
+    )
+    VALUES (
+      ${randomUUID()},
+      ${user.id},
+      ${uniqueUsername},
+      ${displayName},
+      ${""},
+      ${""},
+      ${new Date()}
+    )
+  `);
 
   return NextResponse.json({ ok: true, username: uniqueUsername });
 }
