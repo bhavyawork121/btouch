@@ -1,5 +1,5 @@
 export type PlatformStatus = "ok" | "stale" | "error";
-export type PlatformName = "github" | "leetcode" | "codeforces" | "gfg";
+export type PlatformName = "github" | "leetcode" | "codeforces" | "gfg" | "codechef";
 export type CardTheme = "dark" | "light" | "auto";
 
 interface PlatformStatsBase {
@@ -57,6 +57,14 @@ export interface GFGStats extends PlatformStatsBase {
   streak: number;
   solved: number;
   instituteRank: string;
+  dataUnavailable?: boolean;
+}
+
+export interface CodeChefStats extends PlatformStatsBase {
+  rating: number | null;
+  globalRank: string | null;
+  stars: number | null;
+  profileUrl: string;
 }
 
 export interface CardData {
@@ -82,6 +90,7 @@ export interface CardData {
     leetcode: LeetCodeStats | null;
     codeforces: CodeforcesStats | null;
     gfg: GFGStats | null;
+    codechef: CodeChefStats | null;
   };
   config: {
     showPlatforms: PlatformName[];
