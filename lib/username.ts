@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 function slugify(value: string) {
@@ -11,11 +12,21 @@ function slugify(value: string) {
 
 async function usernameExists(candidate: string) {
   const [user, card] = await Promise.all([
-    prisma.user.findUnique({ where: { username: candidate } }),
-    prisma.cardConfig.findUnique({ where: { username: candidate } }),
+    prisma.$queryRaw<Array<{ username: string }>>(Prisma.sql`
+      SELECT "username"
+      FROM "User"
+      WHERE "username" = ${candidate}
+      LIMIT 1
+    `),
+    prisma.$queryRaw<Array<{ username: string }>>(Prisma.sql`
+      SELECT "username"
+      FROM "CardConfig"
+      WHERE "username" = ${candidate}
+      LIMIT 1
+    `),
   ]);
 
-  return Boolean(user || card);
+  return user.length > 0 || card.length > 0;
 }
 
 export async function createUniqueUsername(inputs: Array<string | null | undefined>) {

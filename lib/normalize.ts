@@ -113,6 +113,7 @@ export interface PlatformData {
   tertiaryMetric?: PlatformMetric;
   lastFetched: string;
   error?: string;
+  dataUnavailable?: boolean;
 }
 
 export type PlatformDataMap = Record<PlatformKey, PlatformData | null>;
@@ -130,7 +131,12 @@ function metric(label: string, value: unknown): PlatformMetric {
   return { label, value: "—" };
 }
 
-function buildErrorPlatformData(platform: PlatformKey, username: string, error: string): PlatformData {
+function buildErrorPlatformData(
+  platform: PlatformKey,
+  username: string,
+  error: string,
+  dataUnavailable = false,
+): PlatformData {
   return {
     platform,
     username,
@@ -138,6 +144,7 @@ function buildErrorPlatformData(platform: PlatformKey, username: string, error: 
     secondaryMetric: metric("Platform", getPlatformConfig(platform).label),
     lastFetched: new Date().toISOString(),
     error,
+    dataUnavailable: dataUnavailable ? true : undefined,
   };
 }
 
@@ -170,7 +177,8 @@ export function normalizePlatformData(
   username: string,
 ): PlatformData {
   if (!raw || raw.status === "error") {
-    return buildErrorPlatformData(platform, username, raw?.error ?? "Failed to load stats.");
+    const dataUnavailable = platform === "gfg" && Boolean((raw as GFGStats | null | undefined)?.dataUnavailable);
+    return buildErrorPlatformData(platform, username, raw?.error ?? "Failed to load stats.", dataUnavailable);
   }
 
   const lastFetched = raw.fetchedAt || new Date().toISOString();
@@ -272,6 +280,7 @@ export function createEmptyCardData(username = ""): CardData {
       leetcode: null,
       codeforces: null,
       gfg: null,
+      codechef: null,
     },
     config: {
       username,
@@ -315,6 +324,7 @@ export function normalizeCard(card: CardConfigLike, platformResults: Partial<Car
       leetcode: platformResults.leetcode ?? null,
       codeforces: platformResults.codeforces ?? null,
       gfg: platformResults.gfg ?? null,
+      codechef: platformResults.codechef ?? null,
     },
     config: {
       username: card.username,
@@ -361,4 +371,3 @@ export function summarizeStats(stats: CardStats): PlatformStatSummary[] {
     },
   ];
 }
-

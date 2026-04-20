@@ -85,6 +85,15 @@ export function getDemoCardData(): CardData {
         solved: 148,
         instituteRank: "#24",
       },
+      codechef: {
+        status: "ok",
+        handle: "bhavyaagarwal",
+        fetchedAt: today,
+        rating: 1654,
+        globalRank: "#4,812",
+        stars: 4,
+        profileUrl: "https://www.codechef.com/users/bhavyaagarwal",
+      },
     },
     config: {
       username: "demo",

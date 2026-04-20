@@ -1,4 +1,5 @@
 import { clearPlatformCache, getCachedPlatform, savePlatformCache } from "@/lib/dbCache";
+import { fetchCodeChefStats } from "@/lib/codechef";
 import { fetchCodeforcesStats } from "@/lib/fetchers/codeforces";
 import { fetchGfgStats } from "@/lib/fetchers/gfg";
 import { fetchGitHubStats } from "@/lib/fetchers/github";
@@ -23,19 +24,21 @@ type CardRecord = {
   leetcodeHandle: string;
   cfHandle: string;
   gfgHandle: string;
+  codechefUsername?: string | null;
   theme: string;
   accentColor: string;
   showPlatforms: string[];
   experience: unknown;
 };
 
-const platformOrder: PlatformName[] = ["github", "leetcode", "codeforces", "gfg"];
+const platformOrder: PlatformName[] = ["github", "leetcode", "codeforces", "gfg", "codechef"];
 
 const fetcherMap: Record<PlatformName, (handle: string) => Promise<unknown>> = {
   github: fetchGitHubStats,
   leetcode: fetchLeetCodeStats,
   codeforces: fetchCodeforcesStats,
   gfg: fetchGfgStats,
+  codechef: fetchCodeChefStats,
 };
 
 function getHandles(config: CardRecord) {
@@ -44,6 +47,7 @@ function getHandles(config: CardRecord) {
     leetcode: config.leetcodeHandle || "",
     codeforces: config.cfHandle || "",
     gfg: config.gfgHandle || "",
+    codechef: config.codechefUsername || "",
   } satisfies Record<PlatformName, string>;
 }
 
@@ -57,11 +61,12 @@ async function loadPlatformStats(config: CardRecord, refreshPlatforms: PlatformN
     leetcode: null,
     codeforces: null,
     gfg: null,
+    codechef: null,
   };
 
   await Promise.allSettled(
     platformOrder.map(async (platform) => {
-      if (!enabled.has(platform)) {
+      if (!enabled.has(platform) && !(platform === "codechef" && handles.codechef)) {
         return;
       }
 
@@ -90,6 +95,9 @@ async function loadPlatformStats(config: CardRecord, refreshPlatforms: PlatformN
             case "gfg":
               stats.gfg = cached as CardStats["gfg"];
               break;
+            case "codechef":
+              stats.codechef = cached as CardStats["codechef"];
+              break;
           }
           return;
         }
@@ -109,6 +117,9 @@ async function loadPlatformStats(config: CardRecord, refreshPlatforms: PlatformN
           break;
         case "gfg":
           stats.gfg = value as CardStats["gfg"];
+          break;
+        case "codechef":
+          stats.codechef = value as CardStats["codechef"];
           break;
       }
     }),
