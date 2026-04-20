@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { FlipCard } from "@/components/card/FlipCard";
+import { getDemoCardData } from "@/lib/demo-card";
 
 export default async function HomePage() {
   const session = await auth();
@@ -263,8 +265,13 @@ export default async function HomePage() {
             padding: "0 52px",
             gap: 0,
             minHeight: 0,
+            position: "relative",
           }}
         >
+          <div style={{ marginBottom: 40, transform: "scale(0.9)", transformOrigin: "center" }}>
+            <FlipCard data={getDemoCardData()} />
+          </div>
+
           <div
             style={{
               fontFamily: "'Space Mono', monospace",
@@ -300,7 +307,7 @@ export default async function HomePage() {
               },
             ].map((f, i) => (
               <div
-                key={f.number}
+                key={f.num}
                 style={{
                   display: "grid",
                   gridTemplateColumns: "32px 1fr",
