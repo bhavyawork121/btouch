@@ -7,7 +7,6 @@ import {
   PolarRadiusAxis,
   Radar,
   RadarChart as RechartsRadarChart,
-  ResponsiveContainer,
   Tooltip,
 } from "recharts";
 import { getPlatformConfig, type PlatformKey } from "@/lib/platforms";
@@ -116,23 +115,21 @@ export function RadarChart({ data, className }: RadarChartProps) {
 
   return (
     <div className={className} style={{ width: 200, height: 200 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <RechartsRadarChart data={points}>
-          <PolarGrid stroke="rgba(255,255,255,0.12)" />
-          <PolarAngleAxis dataKey="initials" tick={{ fill: "rgba(255,255,255,0.72)", fontSize: 11, fontWeight: 600 }} />
-          <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
-          <Tooltip content={<RadarTooltip />} />
-          <Radar
-            dataKey="score"
-            stroke={points[0]?.color ?? "#fff"}
-            fill={points[0]?.color ?? "#fff"}
-            fillOpacity={0.25}
-            isAnimationActive
-            animationDuration={900}
-            animationEasing="ease-out"
-          />
-        </RechartsRadarChart>
-      </ResponsiveContainer>
+      <RechartsRadarChart width={200} height={200} data={points}>
+        <PolarGrid stroke="rgba(255,255,255,0.12)" />
+        <PolarAngleAxis dataKey="initials" tick={{ fill: "rgba(255,255,255,0.72)", fontSize: 11, fontWeight: 600 }} />
+        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+        <Tooltip content={<RadarTooltip />} />
+        <Radar
+          dataKey="score"
+          stroke={points[0]?.color ?? "#fff"}
+          fill={points[0]?.color ?? "#fff"}
+          fillOpacity={0.25}
+          isAnimationActive
+          animationDuration={900}
+          animationEasing="ease-out"
+        />
+      </RechartsRadarChart>
     </div>
   );
 }

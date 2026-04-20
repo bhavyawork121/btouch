@@ -8,6 +8,7 @@ const platformClasses: Record<PlatformName, string> = {
   leetcode: "text-platform-leetcode border-platform-leetcode/25 bg-platform-leetcode/10",
   codeforces: "text-platform-codeforces border-platform-codeforces/25 bg-platform-codeforces/10",
   gfg: "text-platform-gfg border-platform-gfg/25 bg-platform-gfg/10",
+  codechef: "text-[#5b4638] border-[#5b4638]/25 bg-[#5b4638]/10",
 };
 
 export function StatBadge({ platform, summary, index }: { platform: PlatformName; summary: PlatformStatSummary; index: number }) {
@@ -18,7 +19,9 @@ export function StatBadge({ platform, summary, index }: { platform: PlatformName
         ? "#f89f1b"
         : platform === "codeforces"
           ? "#5b8dd4"
-          : "#2ecc71";
+          : platform === "gfg"
+            ? "#2ecc71"
+            : "#5b4638";
 
   return (
     <motion.div

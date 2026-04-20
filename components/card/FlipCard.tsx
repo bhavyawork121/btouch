@@ -136,7 +136,7 @@ export function FlipCard({
         role="group"
         aria-label="Developer card. Press F to flip."
         className="relative w-full outline-none"
-        style={{ perspective: 1200, minHeight: "640px" }}
+        style={{ perspective: 1000, minHeight: "640px" }}
         onDoubleClick={handleDoubleClick}
         onKeyDown={handleKeyDown}
         onTouchStart={handleTouchStart}
@@ -145,6 +145,8 @@ export function FlipCard({
         <div
           className="relative w-full"
           style={{
+            // Keep this height in sync with the card face content so the absolute layers have room to render.
+            height: "640px",
             transformStyle: "preserve-3d",
             transition: prefersReducedMotion
               ? `opacity ${faceTransition.duration}s ${faceTransition.ease}`

@@ -202,7 +202,7 @@ export function CardBack({
         <EmptyState href={emptyStateHref} />
       ) : (
         <div className="grid gap-4">
-          <div className="grid gap-3 md:grid-cols-2">{platformWidgets}</div>
+          <div className="grid grid-cols-2 gap-3">{platformWidgets}</div>
 
           {platformCount >= 3 ? (
             <div className="flex justify-center rounded-3xl border border-white/10 bg-white/[0.03] p-4">

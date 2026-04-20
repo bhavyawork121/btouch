@@ -165,6 +165,7 @@ function buildPreviewData(formData: FormState, avatarPreview: string | null): Ca
       leetcode: null,
       codeforces: null,
       gfg: null,
+      codechef: null,
     },
     config: {
       username: formData.name.trim().toLowerCase().replace(/\s+/g, "-") || "preview",
