@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
+import { Toaster } from "sonner";
+import "@fontsource-variable/space-grotesk";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -21,15 +23,19 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body
         style={
           {
-            "--font-inter": "system-ui, sans-serif",
-            "--font-space-grotesk": "system-ui, sans-serif",
-            "--font-jetbrains-mono": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-            "--font-space-mono": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+            "--font-space-grotesk": '"Space Grotesk Variable", sans-serif',
+            "--font-space-mono":
+              'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
+            "--font-inter": 'var(--font-space-grotesk)',
+            "--font-jetbrains-mono": 'var(--font-space-mono)',
+            "--font-geist-sans": 'var(--font-space-grotesk)',
+            "--font-geist-mono": 'var(--font-space-mono)',
           } as CSSProperties
         }
-        className="text-white antialiased"
+        className="bg-[#0a0a0f] text-white antialiased"
       >
         <Providers>{children}</Providers>
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

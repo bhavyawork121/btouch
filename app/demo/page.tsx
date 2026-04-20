@@ -21,7 +21,6 @@ export default function DemoPage() {
         padding: "60px 20px",
         color: "#fff",
         position: "relative",
-        overflow: "hidden",
       }}
     >
       <div className="absolute inset-0 card-grid opacity-40" />
@@ -127,7 +126,15 @@ export default function DemoPage() {
         </div>
       </div>
 
-      <div style={{ position: "relative", zIndex: 1 }}>
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          width: "100%",
+          maxWidth: "420px",
+          minHeight: "640px",
+        }}
+      >
         <FlipCard data={demoCard} username={demoCard.config.username} />
       </div>
     </main>
