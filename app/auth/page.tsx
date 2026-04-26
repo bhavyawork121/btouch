@@ -16,7 +16,9 @@ export default async function AuthRoute({
   return (
     <AuthPage
       callbackUrl={searchParams?.callbackUrl ?? "/dashboard"}
+      githubEnabled={Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET)}
       googleEnabled={Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)}
+      magicLinkEnabled={Boolean(process.env.AUTH_RESEND_KEY && process.env.AUTH_EMAIL_FROM)}
     />
   );
 }

@@ -15,6 +15,15 @@
   box-sizing: border-box;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border-width: 0;
+  border-style: solid;
+  border-color: #050408;
+}
+
 ::-webkit-scrollbar {
   width: 4px;
 }

@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
-import { randomUUID } from "crypto";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { hashPassword } from "@/lib/password";
 import { verifyPassword } from "@/lib/password";
-import { createUniqueUsername } from "@/lib/username";
 import { signupSchema } from "@/lib/auth-forms";
 
 export const runtime = "nodejs";
@@ -26,14 +22,31 @@ export async function POST(request: Request) {
     );
   }
 
-  const email = parsed.data.email.toLowerCase();
-  const requestedUsername = parsed.data.username?.toLowerCase().trim() || "";
-  const displayName = parsed.data.name?.trim() || email.split("@")[0];
+  const mode =
+    typeof payload === "object" &&
+    payload !== null &&
+    "mode" in payload &&
+    (payload as { mode?: unknown }).mode === "login"
+      ? "login"
+      : "signup";
 
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-  if (existingUser) {
+  const email = parsed.data.email.toLowerCase();
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+    include: { accounts: { select: { provider: true } } },
+  });
+  if (mode === "login") {
+    if (!existingUser) {
+      return NextResponse.json({ error: "No account exists for this email. Sign up first." }, { status: 404 });
+    }
+
     if (!existingUser.passwordHash) {
-      return NextResponse.json({ error: "This account uses Google sign-in. Use Google to continue." }, { status: 409 });
+      const providers = Array.from(new Set(existingUser.accounts.map((account) => account.provider))).sort();
+      const providerLabel = providers.length > 0 ? providers.join(", ") : "passwordless or social sign-in";
+      return NextResponse.json(
+        { error: `This account uses ${providerLabel}. Use that sign-in method to continue.` },
+        { status: 409 },
+      );
     }
 
     const passwordOk = await verifyPassword(parsed.data.password, existingUser.passwordHash);
@@ -44,57 +57,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, username: existingUser.username, exists: true });
   }
 
-  const existingUsername = requestedUsername
-    ? await prisma.user.findUnique({ where: { username: requestedUsername } })
-    : null;
-  const existingCard = requestedUsername
-    ? (
-        await prisma.$queryRaw<Array<{ username: string }>>(Prisma.sql`
-          SELECT "username"
-          FROM "CardConfig"
-          WHERE "username" = ${requestedUsername}
-          LIMIT 1
-        `)
-      ).length > 0
-    : null;
-  if (existingUsername || existingCard) {
-    return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
+  if (mode === "signup") {
+    return NextResponse.json(
+      { error: "Sign up with GitHub, Google, or a magic link. Email and password are login-only." },
+      { status: 400 },
+    );
   }
 
-  const uniqueUsername = await createUniqueUsername([requestedUsername, displayName, email.split("@")[0]]);
-  const passwordHash = await hashPassword(parsed.data.password);
-
-  const user = await prisma.user.create({
-    data: {
-      email,
-      name: displayName,
-      image: "",
-      avatarUrl: "",
-      username: uniqueUsername,
-      passwordHash,
-    },
-  });
-
-  await prisma.$executeRaw(Prisma.sql`
-    INSERT INTO "CardConfig" (
-      "id",
-      "userId",
-      "username",
-      "displayName",
-      "avatarUrl",
-      "githubHandle",
-      "updatedAt"
-    )
-    VALUES (
-      ${randomUUID()},
-      ${user.id},
-      ${uniqueUsername},
-      ${displayName},
-      ${""},
-      ${""},
-      ${new Date()}
-    )
-  `);
-
-  return NextResponse.json({ ok: true, username: uniqueUsername });
+  return NextResponse.json({ error: "Email and password are login-only." }, { status: 400 });
 }

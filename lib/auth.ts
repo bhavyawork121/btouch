@@ -1,5 +1,7 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import GitHub from "next-auth/providers/github";
+import Resend from "next-auth/providers/resend";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { Adapter } from "next-auth/adapters";
@@ -142,6 +144,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   adapter,
   providers: [
+    ...(process.env.AUTH_RESEND_KEY && process.env.AUTH_EMAIL_FROM
+      ? [
+          Resend({
+            apiKey: process.env.AUTH_RESEND_KEY,
+            from: process.env.AUTH_EMAIL_FROM,
+          }),
+        ]
+      : []),
+    ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
+      ? [
+          GitHub({
+            clientId: process.env.GITHUB_CLIENT_ID,
+            clientSecret: process.env.GITHUB_CLIENT_SECRET,
+          }),
+        ]
+      : []),
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
       ? [
           Google({

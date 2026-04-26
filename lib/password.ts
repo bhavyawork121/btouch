@@ -1,11 +1,21 @@
-import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from "crypto";
-import { promisify } from "util";
+import { randomBytes, scrypt, timingSafeEqual } from "crypto";
 
-const scrypt = promisify(scryptCallback);
+async function deriveKey(password: string, salt: string) {
+  return await new Promise<Buffer>((resolve, reject) => {
+    scrypt(password, salt, 64, (error, derivedKey) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(derivedKey);
+    });
+  });
+}
 
 export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
-  const derived = (await scrypt(password, salt, 64)) as Buffer;
+  const derived = await deriveKey(password, salt);
   return `${salt}:${derived.toString("hex")}`;
 }
 
@@ -15,7 +25,7 @@ export async function verifyPassword(password: string, storedHash: string) {
     return false;
   }
 
-  const derived = (await scrypt(password, salt, 64)) as Buffer;
+  const derived = await deriveKey(password, salt);
   const expected = Buffer.from(hash, "hex");
 
   if (derived.length !== expected.length) {
