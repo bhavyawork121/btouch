@@ -186,4 +186,11 @@ select {
     grid-template-columns: 1fr !important;
     gap: 32px !important;
   }
+
+  .directory-grid {
+    grid-template-columns: 1fr !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding-right: 0 !important;
+  }
 }

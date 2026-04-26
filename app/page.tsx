@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
-import { FlipCard } from "@/components/card/FlipCard";
-import { getDemoCardData } from "@/lib/demo-card";
+import { getHomepageUsers, getIdentityQuoteOfDay } from "@/lib/homepage";
 
 export default async function HomePage() {
   const session = await auth();
+  const users = await getHomepageUsers();
+  const { quote, dateLabel } = getIdentityQuoteOfDay();
   const isAuthed = !!session?.user;
   const dashHref = isAuthed ? "/dashboard" : "/auth?callbackUrl=/dashboard";
 
@@ -166,7 +167,7 @@ export default async function HomePage() {
                 letterSpacing: "0.12em",
               }}
             >
-              developer identity card
+              developer identity directory
             </span>
           </div>
 
@@ -207,7 +208,7 @@ export default async function HomePage() {
               letterSpacing: "0.01em",
             }}
           >
-            Connect LinkedIn and your coding platforms. Get a shareable flip card at{" "}
+            Discover real developer profiles already built on btouch, then create your own shareable card at{" "}
             <span
               style={{
                 color: "rgba(165,180,252,0.92)",
@@ -217,7 +218,7 @@ export default async function HomePage() {
             >
               btouch.dev/you
             </span>{" "}
-            - profile on the front, live stats on the back.
+            with your profile on the front and live stats on the back.
           </p>
 
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -239,6 +240,25 @@ export default async function HomePage() {
               }}
             >
               Build your card →
+            </Link>
+            <Link
+              href="/demo"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                background: "transparent",
+                color: "rgba(255,255,255,0.72)",
+                borderRadius: 50,
+                padding: "13px 20px",
+                fontSize: 13,
+                fontWeight: 500,
+                textDecoration: "none",
+                border: "0.5px solid rgba(255,255,255,0.12)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              View demo card
             </Link>
             <span
               style={{
@@ -268,10 +288,6 @@ export default async function HomePage() {
             position: "relative",
           }}
         >
-          <div style={{ marginBottom: 40, transform: "scale(0.9)", transformOrigin: "center" }}>
-            <FlipCard data={getDemoCardData()} />
-          </div>
-
           <div
             style={{
               fontFamily: "'Space Mono', monospace",
@@ -279,81 +295,44 @@ export default async function HomePage() {
               color: "rgba(255,255,255,0.46)",
               letterSpacing: "0.2em",
               textTransform: "uppercase",
-              marginBottom: 18,
+              marginBottom: 14,
             }}
           >
-            what you get
+            identity of the day
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 0, marginBottom: 26 }}>
-            {[
-              {
-                num: "01",
-                title: "LinkedIn front face",
-                desc: "Name, headline, bio and experience - clean and professional.",
-                color: "#a78bfa",
-              },
-              {
-                num: "02",
-                title: "Live coding stats back",
-                desc: "GitHub, LeetCode, Codeforces, GFG - fetched live with heatmap.",
-                color: "#f89f1b",
-              },
-              {
-                num: "03",
-                title: "Shareable forever",
-                desc: "One URL that updates automatically when your stats change.",
-                color: "#2ecc71",
-              },
-            ].map((f, i) => (
-              <div
-                key={f.num}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "32px 1fr",
-                  gap: 14,
-                  padding: "12px 0",
-                  borderBottom: i < 2 ? "0.5px solid rgba(255,255,255,0.05)" : "none",
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: "'Space Mono', monospace",
-                    fontSize: 9,
-                    color: f.color,
-                    opacity: 0.55,
-                    letterSpacing: "0.04em",
-                    paddingTop: 2,
-                  }}
-                >
-                  {f.num}
-                </span>
-                <div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: "#e8eaf6",
-                      letterSpacing: "-0.01em",
-                      marginBottom: 4,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {f.title}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 300,
-                      color: "rgba(255,255,255,0.56)",
-                      lineHeight: 1.55,
-                    }}
-                  >
-                    {f.desc}
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div
+            style={{
+              marginBottom: 26,
+              borderRadius: 18,
+              border: "0.5px solid rgba(255,255,255,0.08)",
+              background: "linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))",
+              padding: "22px 22px 18px",
+              boxShadow: "0 24px 80px rgba(0,0,0,0.22)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 22,
+                lineHeight: 1.5,
+                color: "#f8fafc",
+                letterSpacing: "-0.02em",
+                marginBottom: 18,
+              }}
+            >
+              “{quote}”
+            </div>
+            <div
+              style={{
+                fontFamily: "'Space Mono', monospace",
+                fontSize: 9,
+                color: "rgba(255,255,255,0.45)",
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+              }}
+            >
+              refreshes daily · {dateLabel}
+            </div>
           </div>
 
           <div
@@ -366,73 +345,179 @@ export default async function HomePage() {
               marginBottom: 16,
             }}
           >
-            how it works
+            developers on btouch
           </div>
 
           <div
-            className="how-grid"
+            className="directory-grid"
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
               gap: 16,
+              maxHeight: "52vh",
+              overflowY: "auto",
+              paddingRight: 6,
             }}
           >
-            {[
-              { step: "1", title: "Sign in", desc: "One click with GitHub." },
-              { step: "2", title: "Add links", desc: "LinkedIn + platform handles." },
-              { step: "3", title: "Share", desc: "Your card is live instantly." },
-            ].map((s) => (
+            {users.length > 0 ? users.map((user) => (
               <div
-                key={s.step}
+                key={user.username}
                 style={{
-                  background: "rgba(255,255,255,0.02)",
-                  border: "0.5px solid rgba(255,255,255,0.06)",
-                  borderRadius: 10,
-                  padding: "14px 14px",
+                  background: "rgba(255,255,255,0.025)",
+                  border: "0.5px solid rgba(255,255,255,0.07)",
+                  borderRadius: 16,
+                  padding: "16px",
+                }}
+              >
+                <Link href={`/${user.username}`} style={{ display: "block" }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 14,
+                        background: user.avatarUrl
+                          ? `center / cover no-repeat url(${user.avatarUrl})`
+                          : "linear-gradient(135deg, rgba(99,102,241,0.8), rgba(124,58,237,0.7))",
+                        border: "0.5px solid rgba(255,255,255,0.08)",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 700,
+                          color: "#f8fafc",
+                          letterSpacing: "-0.02em",
+                          marginBottom: 2,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {user.displayName}
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: "'Space Mono', monospace",
+                          fontSize: 10,
+                          color: "#a5b4fc",
+                          letterSpacing: "0.04em",
+                        }}
+                      >
+                        @{user.username}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 12.5,
+                      fontWeight: 500,
+                      color: "#e2e8f0",
+                      lineHeight: 1.45,
+                      marginBottom: 8,
+                      minHeight: 36,
+                    }}
+                  >
+                    {user.tagline || user.headline || "Developer identity in progress."}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "rgba(255,255,255,0.52)",
+                      lineHeight: 1.5,
+                      marginBottom: 12,
+                      minHeight: 16,
+                    }}
+                  >
+                    {user.location || "Location not shared"}
+                  </div>
+
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {user.skills.length > 0 ? user.skills.map((skill) => (
+                      <span
+                        key={skill}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          padding: "5px 9px",
+                          borderRadius: 999,
+                          background: "rgba(99,102,241,0.12)",
+                          border: "0.5px solid rgba(99,102,241,0.24)",
+                          fontFamily: "'Space Mono', monospace",
+                          fontSize: 9,
+                          color: "#c7d2fe",
+                          letterSpacing: "0.03em",
+                        }}
+                      >
+                        {skill}
+                      </span>
+                    )) : (
+                      <span
+                        style={{
+                          fontFamily: "'Space Mono', monospace",
+                          fontSize: 9,
+                          color: "rgba(255,255,255,0.38)",
+                          letterSpacing: "0.06em",
+                        }}
+                      >
+                        open profile →
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              </div>
+            )) : (
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  borderRadius: 16,
+                  border: "0.5px solid rgba(255,255,255,0.08)",
+                  background: "rgba(255,255,255,0.03)",
+                  padding: "22px",
                 }}
               >
                 <div
                   style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: 6,
-                    background: "rgba(99,102,241,0.1)",
-                    border: "0.5px solid rgba(99,102,241,0.2)",
-                    display: "flex",
+                    fontSize: 16,
+                    fontWeight: 600,
+                    color: "#f8fafc",
+                    marginBottom: 8,
+                  }}
+                >
+                  No public users yet.
+                </div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: "rgba(255,255,255,0.58)",
+                    lineHeight: 1.6,
+                    marginBottom: 16,
+                  }}
+                >
+                  Create the first btouch profile and it will appear here instead of the demo card.
+                </div>
+                <Link
+                  href={dashHref}
+                  style={{
+                    display: "inline-flex",
                     alignItems: "center",
-                    justifyContent: "center",
+                    gap: 8,
+                    background: "rgba(99,102,241,0.14)",
+                    border: "0.5px solid rgba(99,102,241,0.32)",
+                    borderRadius: 999,
+                    padding: "10px 16px",
                     fontFamily: "'Space Mono', monospace",
                     fontSize: 10,
-                    fontWeight: 700,
-                    color: "rgba(165,180,252,0.88)",
-                    marginBottom: 10,
+                    color: "#a5b4fc",
+                    letterSpacing: "0.06em",
                   }}
                 >
-                  {s.step}
-                </div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: "#e8eaf6",
-                    letterSpacing: "-0.01em",
-                    marginBottom: 5,
-                  }}
-                >
-                  {s.title}
-                </div>
-                <div
-                  style={{
-                    fontSize: 10.5,
-                    fontWeight: 300,
-                    color: "rgba(255,255,255,0.54)",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {s.desc}
-                </div>
+                  create first profile
+                </Link>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </main>
