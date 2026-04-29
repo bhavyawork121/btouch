@@ -1,343 +1,191 @@
 "use client";
 
-import Image from "next/image";
-import { motion } from "framer-motion";
-import { CheckCircle2, Link2, Share2, Sparkles } from "lucide-react";
-import { useMemo, useState, type CSSProperties } from "react";
-import { toast } from "sonner";
-import { ParticleBackground } from "@/components/card/ParticleBackground";
-import type { CardData } from "@/types/card";
+import { ArrowRight, Upload, UserRound } from "lucide-react";
+import { getPublicUrl } from "@/lib/btouch";
+import type { PlatformStats, UserConfig } from "@/types/stats";
+import { useRef } from "react";
 
-export interface CardFrontWorkExperience {
-  company: string;
-  role: string;
-  startDate?: string | null;
-  endDate?: string | null;
-  description?: string | null;
-  logoUrl?: string | null;
-  domain?: string | null;
-}
+const languageColors = ["#444", "#888", "#aaa", "#ccc"];
 
-interface CardFrontProps {
-  data?: CardData;
-  username?: string;
-  displayName?: string;
-  tagline?: string | null;
-  bio?: string | null;
-  avatarUrl?: string | null;
-  linkedinUrl?: string | null;
-  workExperience?: CardFrontWorkExperience[];
-  cardBackground?: string;
-  cardFont?: string;
-  particleEnabled?: boolean;
-  isOwner?: boolean;
-  onShare?: () => void;
-  className?: string;
-}
-
-const BACKGROUND_PRESETS: Record<string, string> = {
-  "gradient-aurora": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-  "gradient-ocean": "linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)",
-  "gradient-sunset": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-  "gradient-forest": "linear-gradient(135deg, #134e5e 0%, #71b280 100%)",
-  "gradient-midnight": "linear-gradient(135deg, #232526 0%, #414345 100%)",
-  "gradient-gold": "linear-gradient(135deg, #f7971e 0%, #ffd200 100%)",
-};
-
-function parseBackground(background = "gradient-aurora") {
-  if (background in BACKGROUND_PRESETS) {
-    return BACKGROUND_PRESETS[background];
+function fallbackLanguages(stats: PlatformStats) {
+  if (!stats.github?.languageBreakdown?.length) {
+    return [
+      { label: "TypeScript", percent: 68 },
+      { label: "JavaScript", percent: 18 },
+      { label: "Python", percent: 9 },
+      { label: "Other", percent: 5 },
+    ];
   }
 
-  if (background.startsWith("custom:")) {
-    const [, colors] = background.split("custom:");
-    const [start, end] = (colors ?? "").split(",").map((part) => part.trim());
+  const list = stats.github.languageBreakdown.slice(0, 4);
+  const total = list.reduce((sum, item) => sum + item.percent, 0);
+  const normalized = list.map((item) => ({ ...item, percent: Math.round((item.percent / total) * 100) }));
 
-    if (start && end) {
-      return `linear-gradient(135deg, ${start}, ${end})`;
-    }
+  while (normalized.length < 4) {
+    normalized.push({ label: normalized.length === 3 ? "Other" : "—", percent: normalized.length === 3 ? Math.max(0, 100 - normalized.reduce((sum, item) => sum + item.percent, 0)) : 0 });
   }
 
-  return BACKGROUND_PRESETS["gradient-aurora"];
+  return normalized.slice(0, 4);
 }
 
-function getFontFamily(font = "inter") {
-  switch (font) {
-    case "space-grotesk":
-      return "var(--font-space-grotesk), sans-serif";
-    case "cal-sans":
-      return '"Cal Sans", var(--font-space-grotesk), sans-serif';
-    case "inter":
-    default:
-      return "var(--font-inter), var(--font-space-grotesk), sans-serif";
-  }
-}
-
-function getInitials(name: string) {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) {
-    return "BT";
-  }
-
-  return words
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
-function formatDateRange(startDate?: string | null, endDate?: string | null) {
-  const start = startDate?.trim();
-  const end = endDate?.trim();
-
-  if (start && end) {
-    return `${start} - ${end}`;
-  }
-
-  return start ?? end ?? "Present";
-}
-
-function fromLegacyExperience(data: CardData["profile"]["experience"]): CardFrontWorkExperience[] {
-  return (data ?? []).map((entry) => ({
-    company: entry.company,
-    role: entry.role,
-    startDate: null,
-    endDate: entry.duration,
-    description: entry.description,
-  }));
-}
-
-function stripLinkedInHandle(linkedinUrl: string) {
-  return linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//i, "").replace(/\/$/, "");
-}
-
-function CompanyLogo({
-  company,
-  logoUrl,
-  domain,
-}: {
-  company: string;
-  logoUrl?: string | null;
-  domain?: string | null;
-}) {
-  const [failed, setFailed] = useState(false);
-  const normalizedDomain = domain?.trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
-  const clearbitUrl = normalizedDomain ? `https://logo.clearbit.com/${normalizedDomain}` : null;
-  const imageUrl = failed ? null : logoUrl ?? clearbitUrl;
-
-  if (!imageUrl) {
-    return (
-      <div className="flex h-6 w-6 items-center justify-center rounded-md border border-white/10 bg-white/5 text-[10px] font-semibold text-white/70">
-        {company.slice(0, 1).toUpperCase()}
-      </div>
-    );
-  }
-
-  return (
-    <Image
-      src={imageUrl}
-      alt={`${company} logo`}
-      width={24}
-      height={24}
-      className="h-6 w-6 rounded-md object-cover"
-      onError={() => setFailed(true)}
-      unoptimized
-    />
-  );
-}
-
-function ExperienceCard({ item }: { item: CardFrontWorkExperience }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-3 shadow-[0_1px_0_rgba(255,255,255,0.06)_inset] backdrop-blur-sm">
-      <div className="flex items-start gap-3">
-        <CompanyLogo company={item.company} logoUrl={item.logoUrl} domain={item.domain} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold text-white">{item.role}</p>
-              <p className="truncate text-[11px] text-white/65">
-                {item.company} • {formatDateRange(item.startDate, item.endDate)}
-              </p>
-            </div>
-          </div>
-          {item.description ? (
-            <p
-              className="mt-2 text-[11px] leading-5 text-white/55"
-              style={{
-                display: "-webkit-box",
-                WebkitBoxOrient: "vertical",
-                WebkitLineClamp: 2,
-                overflow: "hidden",
-              }}
-            >
-              {item.description}
-            </p>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
+function qrUrl(config: UserConfig) {
+  return `/api/qr?url=${encodeURIComponent(config.portfolioUrl || getPublicUrl(config.username))}`;
 }
 
 export function CardFront({
-  data,
-  username,
-  displayName,
-  tagline,
-  bio,
-  avatarUrl,
-  linkedinUrl,
-  workExperience = [],
-  cardBackground = "gradient-aurora",
-  cardFont = "inter",
-  particleEnabled = false,
-  isOwner = false,
-  onShare,
-  className,
-}: CardFrontProps) {
-  const [avatarFailed, setAvatarFailed] = useState(false);
-  const resolvedUsername = username ?? data?.config.username ?? "btouch";
-  const resolvedDisplayName = displayName ?? data?.profile.displayName ?? resolvedUsername;
-  const resolvedTagline = tagline ?? data?.profile.headline ?? null;
-  const resolvedBio = bio ?? data?.profile.bio ?? null;
-  const resolvedAvatar = avatarUrl ?? data?.profile.avatarUrl ?? null;
-  const resolvedLinkedInUrl = linkedinUrl ?? data?.profile.linkedinUrl ?? null;
-  const resolvedWorkExperience = workExperience.length > 0 ? workExperience : fromLegacyExperience(data?.profile.experience);
-  const resolvedBackground = cardBackground ?? "gradient-aurora";
-  const resolvedFont = cardFont ?? "inter";
-  const resolvedParticleEnabled = Boolean(particleEnabled);
-  const backgroundImage = useMemo(() => parseBackground(resolvedBackground), [resolvedBackground]);
-  const fontFamily = useMemo(() => getFontFamily(resolvedFont), [resolvedFont]);
-  const visibleExperience = useMemo(() => resolvedWorkExperience.slice(0, 2), [resolvedWorkExperience]);
-  const initials = useMemo(() => getInitials(resolvedDisplayName || resolvedUsername), [resolvedDisplayName, resolvedUsername]);
-  const linkedInHandle = resolvedLinkedInUrl ? stripLinkedInHandle(resolvedLinkedInUrl) : null;
+  config,
+  stats,
+  onFlip,
+  editable,
+  onAvatarSelect,
+}: {
+  config: UserConfig;
+  stats: PlatformStats;
+  onFlip: () => void;
+  editable?: boolean;
+  onAvatarSelect?: (value: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const languages = fallbackLanguages(stats);
 
-  async function handleCopyLinkedIn() {
-    if (!resolvedLinkedInUrl) {
+  async function handleFile(event: { target: HTMLInputElement }) {
+    const file = event.target.files?.[0];
+    if (!file || !onAvatarSelect) {
       return;
     }
 
-    try {
-      await navigator.clipboard.writeText(resolvedLinkedInUrl);
-      toast.success("LinkedIn copied!");
-    } catch {
-      toast.error("Could not copy LinkedIn link.");
-    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        onAvatarSelect(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
   }
 
   return (
-    <article
-      className={[
-        "relative mx-auto w-full max-w-[420px] overflow-hidden rounded-[32px] border border-white/10 shadow-[0_18px_50px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(0,0,0,0.15)]",
-        className ?? "",
-      ].join(" ")}
-      style={{ backgroundImage, fontFamily } as CSSProperties}
-      aria-label={`${resolvedDisplayName}'s developer card front`}
-    >
-      <ParticleBackground enabled={resolvedParticleEnabled} />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/15 to-black/30" aria-hidden="true" />
-      <div className="relative z-10 flex flex-col gap-5 p-5 text-white">
-        <div className="flex items-center justify-between">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.24em] text-white/80 backdrop-blur-sm">
-            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-            btouch
-          </div>
-          {resolvedLinkedInUrl ? (
-            <div className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-medium text-emerald-100">
-              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-              LinkedIn verified
-            </div>
-          ) : null}
-        </div>
-
-        <div className="flex flex-col items-center text-center">
-          <div className="group relative h-24 w-24 overflow-hidden rounded-full ring-0 transition-[box-shadow,transform] duration-300 hover:shadow-[0_0_0_3px_rgba(255,255,255,0.3),0_0_20px_rgba(255,255,255,0.15)]">
-            {resolvedAvatar && !avatarFailed ? (
-              <Image
-                src={resolvedAvatar}
-                alt={`${resolvedDisplayName} avatar`}
-                fill
-                sizes="96px"
-                className="object-cover"
-                onError={() => setAvatarFailed(true)}
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-black/25 text-2xl font-semibold text-white">
-                {initials}
-              </div>
-            )}
-          </div>
-          <h2 className="mt-4 text-2xl font-semibold tracking-tight text-white">{resolvedDisplayName}</h2>
-          {resolvedTagline ? <p className="mt-2 max-w-[320px] text-sm text-white/70">{resolvedTagline.slice(0, 80)}</p> : null}
-          {resolvedLinkedInUrl ? (
-            <p className="mt-3 inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] text-white/85">
-              <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
-              {linkedInHandle}
-            </p>
-          ) : null}
-        </div>
-
-        {resolvedBio ? (
-          <motion.p
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="text-sm leading-6 text-white/72"
-            style={{
-              display: "-webkit-box",
-              WebkitBoxOrient: "vertical",
-              WebkitLineClamp: 3,
-              overflow: "hidden",
-            }}
-          >
-            {resolvedBio.slice(0, 280)}
-          </motion.p>
-        ) : null}
-
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-white/40">Work experience</p>
-          <p className="text-[10px] text-white/40">{isOwner && visibleExperience.length === 0 ? "Visible to you only" : ""}</p>
-          </div>
-
-          {visibleExperience.length > 0 ? (
-            <div className="grid gap-2">
-              {visibleExperience.map((item) => (
-                <ExperienceCard key={`${item.company}-${item.role}-${item.startDate ?? ""}`} item={item} />
-              ))}
-            </div>
-          ) : isOwner ? (
-            <button
-              type="button"
-              className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-dashed border-white/20 bg-white/5 px-4 py-3 text-sm text-white/75 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-            >
-              Add experience →
-            </button>
-          ) : null}
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 pt-1">
-          <button
-            type="button"
-            onClick={() => void handleCopyLinkedIn()}
-            disabled={!resolvedLinkedInUrl}
-            aria-label="Copy LinkedIn URL"
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Link2 className="h-4 w-4" aria-hidden="true" />
-            Connect
-          </button>
-          <button
-            type="button"
-            onClick={onShare}
-            disabled={!onShare}
-            aria-label="Share card"
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-sm font-medium text-white transition hover:bg-black/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Share2 className="h-4 w-4" aria-hidden="true" />
-            Share
-          </button>
+    <div className="relative h-[499px] w-[300px] overflow-hidden rounded-[14px] border border-[var(--cream-border)] bg-[var(--cream-base)] text-[var(--cream-text)]">
+      <div className="flex items-center justify-between bg-[#111] px-[14px] py-[10px]">
+        <p className="text-[9px] uppercase tracking-[0.22em] text-[rgba(216,210,200,0.24)]">btouch · developer id</p>
+        <div className="rounded-[3px] border border-[#303030] bg-[#1e1e1e] px-2 py-[3px] text-[8px] text-[#666]">
+          {config.linkedinVerified ? "VERIFIED" : "PROFILE"}
         </div>
       </div>
-    </article>
+      <div className="h-[2px] bg-[var(--accent-line)]" />
+      <div className="flex h-[calc(100%-44px)] flex-col px-[14px] py-[10px]">
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => editable && inputRef.current?.click()}
+            className="relative flex h-[80px] w-[66px] shrink-0 items-center justify-center overflow-hidden rounded-[5px] border border-[var(--cream-border)] bg-[#e0dace]"
+          >
+            {config.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={config.avatarUrl} alt={config.name} className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex flex-col items-center gap-1 text-[#999]">
+                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[#ccc6bc]">
+                  <UserRound className="h-5 w-5 text-[#7b7468]" />
+                </span>
+                <span className="text-[7.5px]">{editable ? "Tap to upload" : "No photo"}</span>
+              </div>
+            )}
+            {editable ? (
+              <span className="absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#111] text-[var(--cream-base)]">
+                <Upload className="h-3 w-3" />
+              </span>
+            ) : null}
+          </button>
+          <div className="min-w-0 flex-1">
+            <p className="text-[9px] text-[#777]">Developer Identity</p>
+            <div className="mt-1 flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h2 className="truncate font-serif text-[16px] font-bold leading-[1.15] text-[#0d0d0d]">{config.name}</h2>
+                <p className="mt-0.5 line-clamp-2 text-[8.5px] uppercase tracking-[0.04em] leading-[1.35] text-[#555]">{config.tagline || "Product Engineer · btouch"}</p>
+              </div>
+              <div className="grid h-[22px] w-[30px] grid-cols-2 grid-rows-3 gap-[1px] rounded-[3px] border border-[#444] bg-[#555] p-[2px]">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <span key={index} className="rounded-[1px] bg-[rgba(255,255,255,0.12)]" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="my-3 flex items-center gap-3">
+          <div className="h-px flex-1 bg-[var(--cream-border)]" />
+          <div className="h-[5px] w-[5px] rounded-full bg-[#888]" />
+          <div className="h-px flex-1 bg-[var(--cream-border)]" />
+        </div>
+
+        <div>
+          <p className="text-[8px] uppercase tracking-[0.14em] text-[#888]">Career</p>
+          <div className="relative mt-2 space-y-2.5 pl-4">
+            <div className="absolute bottom-2 left-[3px] top-2 w-px bg-[var(--cream-border)]" />
+            {(config.experience.length ? config.experience : [{ role: "Add experience", company: "Independent", period: "2024–Present", initial: "•" }]).slice(0, 3).map((entry, index) => (
+              <div key={`${entry.role}-${entry.company}-${index}`} className="relative">
+                <span className={`absolute -left-[14px] top-[5px] h-[7px] w-[7px] rounded-full ${index === 0 ? "bg-[#111]" : "border-[1.5px] border-[#aaa] bg-[var(--cream-base)]"}`} />
+                <p className="text-[8px] text-[#999]">{entry.period || "—"}</p>
+                <p className="text-[11px] font-semibold text-[#111]">{entry.role || "—"}</p>
+                <p className="text-[9.5px] leading-[1.25] text-[#666]">{entry.company || "—"}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="my-3 flex items-center gap-3">
+          <div className="h-px flex-1 bg-[var(--cream-border)]" />
+          <div className="h-[5px] w-[5px] rounded-full bg-[#888]" />
+          <div className="h-px flex-1 bg-[var(--cream-border)]" />
+        </div>
+
+        <div>
+          <p className="text-[8px] uppercase tracking-[0.14em] text-[#888]">Languages</p>
+          <div className="mt-2 space-y-[6px]">
+            {languages.map((item, index) => (
+              <div key={item.label} className="grid grid-cols-[52px_1fr_22px] items-center gap-2">
+                <span className="truncate text-[9px] text-[#444]">{item.label}</span>
+                <div className="h-[3.5px] rounded-full bg-[var(--cream-border)]">
+                  <div className="h-[3.5px] rounded-full" style={{ width: `${item.percent}%`, background: languageColors[index] || "#444" }} />
+                </div>
+                <span className="text-right text-[9px] text-[#666]">{item.percent}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <p className="text-[8px] uppercase tracking-[0.14em] text-[#888]">Skills</p>
+            <div className="mt-1.5 flex max-h-[54px] flex-wrap gap-1 overflow-hidden">
+              {(config.skills.length ? config.skills : ["React", "Node.js", "TypeScript", "PostgreSQL"]).slice(0, 8).map((skill) => (
+                <span key={skill} className="rounded-[4px] border border-[#beb6a8] bg-[rgba(0,0,0,0.05)] px-[7px] py-[2px] text-[9px] text-[#444]">
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="shrink-0 text-center">
+            <div className="flex h-[44px] w-[44px] items-center justify-center overflow-hidden rounded-[4px] border border-[#c8c0b4] bg-[#e3ddd3]">
+              <img src={qrUrl(config)} alt="Portfolio QR code" className="h-[44px] w-[44px]" />
+            </div>
+            <p className="mt-1 text-[7.5px] text-[#999]">Portfolio</p>
+          </div>
+        </div>
+
+        <div className="mt-auto pt-2">
+          <button
+            type="button"
+            onClick={onFlip}
+            className="ml-auto inline-flex items-center gap-2 rounded-full border border-[#2e2e2e] bg-[#111] px-[12px] py-[5px] text-[10px] text-[rgba(216,210,200,0.5)]"
+          >
+            Stats
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      </div>
+    </div>
   );
 }
