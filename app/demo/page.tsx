@@ -82,7 +82,7 @@ export default function DemoPage() {
             marginBottom: 28,
           }}
         >
-          Use the toggle on the card to switch between compact and full view.
+          Open the sleeve to reveal the profile card, then flip it to the live stats side.
         </p>
 
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
@@ -133,6 +133,8 @@ export default function DemoPage() {
           width: "100%",
           maxWidth: "420px",
           minHeight: "640px",
+          display: "flex",
+          justifyContent: "center",
         }}
       >
         <FlipCard data={demoCard} username={demoCard.config.username} />
