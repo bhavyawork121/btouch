@@ -34,7 +34,9 @@ model CardConfig {
   username String @unique
 
   linkedinUrl    String   @default("")
+  linkedinVerified Boolean @default(false)
   displayName    String   @default("")
+  initials       String   @default("")
   headline       String   @default("")
   bio            String   @default("")
   tagline        String   @default("")
@@ -43,7 +45,10 @@ model CardConfig {
   currentCompany String   @default("")
   location       String   @default("")
   openToWork     Boolean  @default(false)
+  portfolioUrl   String   @default("")
   skills         String[] @default([])
+  funZoneType    String   @default("emoji")
+  funZoneValue   String   @default("🚀")
 
   githubHandle   String @default("")
   leetcodeHandle String @default("")
