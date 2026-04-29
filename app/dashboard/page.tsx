@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { DashboardEditor } from "@/components/dashboard/DashboardEditor";
+import { Editor } from "@/components/dashboard/Editor";
 import { auth } from "@/lib/auth";
-import { getDashboardPreviewData } from "@/lib/card-service";
+import { getDashboardConfig } from "@/lib/btouch";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -10,7 +10,10 @@ export default async function DashboardPage() {
     redirect(`/auth?callbackUrl=${encodeURIComponent("/dashboard")}`);
   }
 
-  const preview = await getDashboardPreviewData(session.user.email);
+  const config = await getDashboardConfig(session.user.email);
+  if (!config) {
+    redirect("/auth");
+  }
 
-  return <DashboardEditor preview={preview} />;
+  return <Editor initialConfig={config} />;
 }

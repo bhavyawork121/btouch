@@ -8,10 +8,10 @@ import { Providers } from "./providers";
 export const metadata: Metadata = {
   metadataBase: new URL("https://btouch.dev"),
   title: "btouch",
-  description: "Animated developer identity cards with live coding stats.",
+  description: "Developer identity cards with a physical sleeve, flip card profile, and live platform stats.",
   openGraph: {
     title: "btouch",
-    description: "Shareable developer flip cards powered by live platform data.",
+    description: "Shareable developer identity cards powered by live platform data.",
     siteName: "btouch",
     type: "website",
   },
