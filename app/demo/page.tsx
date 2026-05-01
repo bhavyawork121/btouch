@@ -7,19 +7,19 @@ export default function DemoPage() {
 
   return (
     <main
-      className="page-enter"
+      className="theme-shell page-enter"
       style={{
         minHeight: "100vh",
-        backgroundColor: "#060810",
-        backgroundImage: `
-          radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.15) 0%, transparent 60%)
+        background: `
+          radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.15) 0%, transparent 60%),
+          var(--ui-page-bg)
         `,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "flex-start",
         padding: "60px 20px",
-        color: "#fff",
+        color: "var(--ui-text)",
         position: "relative",
       }}
     >
@@ -39,8 +39,8 @@ export default function DemoPage() {
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
-            background: "rgba(255,255,255,0.06)",
-            border: "0.5px solid rgba(255,255,255,0.12)",
+            background: "var(--ui-button-secondary-bg)",
+            border: "0.5px solid var(--ui-panel-border-strong)",
             borderRadius: 50,
             padding: "6px 14px",
             marginBottom: 20,
@@ -51,7 +51,7 @@ export default function DemoPage() {
             style={{
               fontFamily: "'Space Mono', monospace",
               fontSize: 10,
-              color: "rgba(255,255,255,0.45)",
+              color: "var(--ui-text-soft)",
               letterSpacing: "0.08em",
             }}
           >
@@ -64,7 +64,7 @@ export default function DemoPage() {
             fontFamily: "'Space Grotesk', sans-serif",
             fontSize: "clamp(28px, 4vw, 48px)",
             fontWeight: 700,
-            color: "#ffffff",
+            color: "var(--ui-text)",
             letterSpacing: "-0.02em",
             lineHeight: 1.1,
             marginBottom: 14,
@@ -74,13 +74,13 @@ export default function DemoPage() {
         </h1>
 
         <p
-          style={{
-            fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: 14,
-            color: "rgba(255,255,255,0.4)",
-            lineHeight: 1.7,
-            marginBottom: 28,
-          }}
+            style={{
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontSize: 14,
+              color: "var(--ui-text-muted)",
+              lineHeight: 1.7,
+              marginBottom: 28,
+            }}
         >
           Open the sleeve to reveal the profile card, then flip it to the live stats side.
         </p>
@@ -92,8 +92,8 @@ export default function DemoPage() {
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
-              background: "#ffffff",
-              color: "#0a0a0a",
+              background: "var(--ui-text)",
+              color: "var(--ui-page-fg)",
               borderRadius: 50,
               padding: "12px 24px",
               fontFamily: "'Space Grotesk', sans-serif",
@@ -110,9 +110,9 @@ export default function DemoPage() {
             style={{
               display: "inline-flex",
               alignItems: "center",
-              background: "transparent",
-              color: "rgba(255,255,255,0.6)",
-              border: "0.5px solid rgba(255,255,255,0.18)",
+              background: "var(--ui-button-secondary-bg)",
+              color: "var(--ui-text-muted)",
+              border: "0.5px solid var(--ui-panel-border-strong)",
               borderRadius: 50,
               padding: "12px 24px",
               fontFamily: "'Space Grotesk', sans-serif",

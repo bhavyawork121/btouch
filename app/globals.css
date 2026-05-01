@@ -31,6 +31,46 @@
   --back-muted: rgba(216, 210, 200, 0.18);
   --chip-bg: #555555;
   --chip-line: rgba(255, 255, 255, 0.12);
+  --ui-page-bg:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.035), transparent 34%),
+    linear-gradient(180deg, #0f0f0f 0%, #0c0c0c 100%);
+  --ui-page-fg: #f4f1ea;
+  --ui-panel-bg: rgba(255, 255, 255, 0.03);
+  --ui-panel-subtle-bg: rgba(0, 0, 0, 0.18);
+  --ui-panel-border: rgba(255, 255, 255, 0.08);
+  --ui-panel-border-strong: rgba(255, 255, 255, 0.12);
+  --ui-text: #f4f1ea;
+  --ui-text-muted: rgba(255, 255, 255, 0.58);
+  --ui-text-soft: rgba(255, 255, 255, 0.35);
+  --ui-text-faint: rgba(255, 255, 255, 0.24);
+  --ui-input-bg: rgba(255, 255, 255, 0.03);
+  --ui-input-placeholder: rgba(255, 255, 255, 0.24);
+  --ui-button-secondary-bg: rgba(255, 255, 255, 0.03);
+  --ui-button-secondary-hover: rgba(255, 255, 255, 0.08);
+  --ui-preview-bg: rgba(255, 255, 255, 0.03);
+  --ui-preview-border: rgba(255, 255, 255, 0.08);
+}
+
+[data-ui-theme="light"] {
+  color-scheme: light;
+  --ui-page-bg:
+    radial-gradient(circle at top, rgba(17, 24, 39, 0.03), transparent 36%),
+    linear-gradient(180deg, #f2f2f2 0%, #e8e8e8 100%);
+  --ui-page-fg: #111111;
+  --ui-panel-bg: rgba(255, 255, 255, 0.8);
+  --ui-panel-subtle-bg: rgba(17, 24, 39, 0.04);
+  --ui-panel-border: rgba(17, 24, 39, 0.12);
+  --ui-panel-border-strong: rgba(17, 24, 39, 0.18);
+  --ui-text: #111111;
+  --ui-text-muted: rgba(17, 24, 39, 0.72);
+  --ui-text-soft: rgba(17, 24, 39, 0.56);
+  --ui-text-faint: rgba(17, 24, 39, 0.38);
+  --ui-input-bg: rgba(255, 255, 255, 0.88);
+  --ui-input-placeholder: rgba(17, 24, 39, 0.4);
+  --ui-button-secondary-bg: rgba(17, 24, 39, 0.04);
+  --ui-button-secondary-hover: rgba(17, 24, 39, 0.08);
+  --ui-preview-bg: rgba(255, 255, 255, 0.76);
+  --ui-preview-border: rgba(17, 24, 39, 0.12);
 }
 
 * {
@@ -70,10 +110,8 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.035), transparent 34%),
-    linear-gradient(180deg, #0f0f0f 0%, #0c0c0c 100%);
-  color: #f4f1ea;
+  background: var(--ui-page-bg);
+  color: var(--ui-page-fg);
   font-family: var(--font-inter), sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -109,6 +147,74 @@ select {
 
 .text-balance {
   text-wrap: balance;
+}
+
+.theme-shell {
+  background: var(--ui-page-bg);
+  color: var(--ui-text);
+}
+
+.theme-panel {
+  border: 1px solid var(--ui-panel-border);
+  background: var(--ui-panel-bg);
+}
+
+.theme-subpanel {
+  border: 1px solid var(--ui-panel-border);
+  background: var(--ui-panel-subtle-bg);
+}
+
+.theme-text {
+  color: var(--ui-text);
+}
+
+.theme-text-muted {
+  color: var(--ui-text-muted);
+}
+
+.theme-text-soft {
+  color: var(--ui-text-soft);
+}
+
+.theme-text-faint {
+  color: var(--ui-text-faint);
+}
+
+.theme-input {
+  width: 100%;
+  border: 1px solid var(--ui-panel-border);
+  background: var(--ui-input-bg);
+  color: var(--ui-text);
+}
+
+.theme-input::placeholder {
+  color: var(--ui-input-placeholder);
+}
+
+.theme-button-secondary {
+  border: 1px solid var(--ui-panel-border);
+  background: var(--ui-button-secondary-bg);
+  color: var(--ui-text);
+}
+
+.theme-button-secondary:hover {
+  background: var(--ui-button-secondary-hover);
+}
+
+.theme-preview-shell {
+  border: 1px solid var(--ui-preview-border);
+  background: var(--ui-preview-bg);
+}
+
+.theme-content {
+  color: var(--ui-text);
+}
+
+.theme-content input,
+.theme-content textarea,
+.theme-content select,
+.theme-content button {
+  color: inherit;
 }
 
 @keyframes btouchLed {
@@ -149,8 +255,6 @@ select {
 
 @media (max-width: 768px) {
   body {
-    background:
-      radial-gradient(circle at top, rgba(255, 255, 255, 0.025), transparent 28%),
-      linear-gradient(180deg, #0f0f0f 0%, #0c0c0c 100%);
+    background: var(--ui-page-bg);
   }
 }

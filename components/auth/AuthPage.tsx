@@ -36,6 +36,7 @@ export function AuthPage({ callbackUrl, githubEnabled, googleEnabled, magicLinkE
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [manualForm, setManualForm] = useState({ name: "", email: "", password: "" });
   const [magicLinkEmail, setMagicLinkEmail] = useState("");
+  const isLightTheme = typeof document !== "undefined" && document.documentElement.getAttribute("data-ui-theme") === "light";
 
   async function handleOAuthSignIn(provider: "google" | "github", enabled: boolean, providerLabel: string) {
     setError("");
@@ -121,7 +122,7 @@ export function AuthPage({ callbackUrl, githubEnabled, googleEnabled, magicLinkE
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#05060a] text-white">
+    <main className="theme-shell theme-content relative min-h-screen overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(99,102,241,0.18),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(124,58,237,0.14),transparent_22%),radial-gradient(circle_at_74%_76%,rgba(34,197,94,0.08),transparent_24%)]" />
       <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:44px_44px]" />
       <svg
@@ -184,43 +185,43 @@ export function AuthPage({ callbackUrl, githubEnabled, googleEnabled, magicLinkE
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 shadow-[0_20px_50px_rgba(79,70,229,0.28)]">
                 <span className="font-mono text-sm font-bold tracking-[0.16em] text-white">b</span>
               </div>
-              <span className="font-mono text-xs uppercase tracking-[0.22em] text-white/70">btouch</span>
+              <span className="theme-text-muted font-mono text-xs uppercase tracking-[0.22em]">btouch</span>
             </Link>
 
             <div className="mt-10 max-w-lg">
-              <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-white/38">Developer Identity Access</div>
-              <h1 className="mt-4 font-sans text-[clamp(2.4rem,4.2vw,4.2rem)] font-semibold leading-[0.94] tracking-[-0.055em] text-white">
+              <div className="theme-text-soft font-mono text-[11px] uppercase tracking-[0.3em]">Developer Identity Access</div>
+              <h1 className="theme-text mt-4 font-sans text-[clamp(2.4rem,4.2vw,4.2rem)] font-semibold leading-[0.94] tracking-[-0.055em]">
                 Sign in to manage your public card.
               </h1>
-              <p className="mt-4 max-w-md text-base leading-7 text-white/62">
+              <p className="theme-text-muted mt-4 max-w-md text-base leading-7">
                 Access your dashboard, refresh profile data, and update your developer identity from one secure sign-in flow.
               </p>
             </div>
 
-            <div className="mt-10 max-w-lg divide-y divide-white/8 rounded-[22px] border border-white/8 bg-white/[0.03] backdrop-blur-sm">
+            <div className="theme-panel mt-10 max-w-lg divide-y rounded-[22px] backdrop-blur-sm" style={{ borderColor: "var(--ui-panel-border)", background: "var(--ui-panel-bg)", color: "var(--ui-text)", ['--tw-divide-opacity' as string]: '1' }}>
               {features.map((feature) => (
-                <div key={feature.title} className="px-5 py-4">
-                  <div className="text-[15px] font-medium text-white">{feature.title}</div>
-                  <div className="mt-1.5 text-sm leading-6 text-white/52">{feature.body}</div>
+                <div key={feature.title} className="px-5 py-4" style={{ borderColor: "var(--ui-panel-border)" }}>
+                  <div className="theme-text text-[15px] font-medium">{feature.title}</div>
+                  <div className="theme-text-muted mt-1.5 text-sm leading-6">{feature.body}</div>
                 </div>
               ))}
             </div>
           </section>
 
           <section className="mx-auto w-full max-w-[520px]">
-            <div className="rounded-[20px] border border-white/10 bg-white/[0.06] p-[1px] shadow-[0_30px_90px_rgba(0,0,0,0.38)] backdrop-blur-2xl">
-              <div className="rounded-[20px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(9,10,15,0.86),rgba(9,10,15,0.72))] px-4 py-4 sm:px-5 sm:py-5">
+            <div className="rounded-[20px] p-[1px] shadow-[0_30px_90px_rgba(0,0,0,0.18)] backdrop-blur-2xl" style={{ border: "1px solid var(--ui-panel-border-strong)", background: "var(--ui-panel-bg)" }}>
+              <div className="rounded-[20px] px-4 py-4 sm:px-5 sm:py-5" style={{ border: "1px solid var(--ui-panel-border)", background: "color-mix(in srgb, var(--ui-panel-bg) 88%, transparent)" }}>
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
-                    <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/42">Sign in</div>
-                    <h2 className="mt-1.5 text-[22px] font-semibold tracking-[-0.04em] text-white">
+                    <div className="theme-text-soft font-mono text-[10px] uppercase tracking-[0.24em]">Sign in</div>
+                    <h2 className="theme-text mt-1.5 text-[22px] font-semibold tracking-[-0.04em]">
                       {authMode === "login" ? "Welcome back" : "Create account"}
                     </h2>
-                    <p className="mt-1 text-[11px] leading-4 text-white/54">
+                    <p className="theme-text-muted mt-1 text-[11px] leading-4">
                       {authMode === "login" ? "Log in with your existing account." : "Create your account with magic link, GitHub, or Google."}
                     </p>
                   </div>
-                  <Link href="/" className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/55 transition hover:bg-white/[0.05]">
+                  <Link href="/" className="rounded-full px-3 py-1.5 text-xs transition" style={{ border: "1px solid var(--ui-panel-border)", color: "var(--ui-text-muted)", background: "var(--ui-button-secondary-bg)" }}>
                     Back
                   </Link>
                 </div>
@@ -238,7 +239,7 @@ export function AuthPage({ callbackUrl, githubEnabled, googleEnabled, magicLinkE
                   ) : null}
                 </div>
 
-                <div className="mb-3 grid grid-cols-2 rounded-2xl border border-white/8 bg-white/[0.03] p-1">
+                <div className="mb-3 grid grid-cols-2 rounded-2xl p-1" style={{ border: "1px solid var(--ui-panel-border)", background: "var(--ui-button-secondary-bg)" }}>
                   <button
                     type="button"
                     onClick={() => {
@@ -247,8 +248,16 @@ export function AuthPage({ callbackUrl, githubEnabled, googleEnabled, magicLinkE
                       setMessage("");
                     }}
                     className={`h-8 rounded-[14px] text-sm font-medium transition ${
-                      authMode === "login" ? "bg-white text-[#05060a]" : "text-white/62 hover:bg-white/[0.05]"
+                      authMode === "login" ? "" : ""
                     }`}
+                    style={
+                      authMode === "login"
+                        ? {
+                            background: isLightTheme ? "var(--ui-text)" : "#dfd5d5",
+                            color: isLightTheme ? "#dfd5d5" : "#111111",
+                          }
+                        : { color: "var(--ui-text-muted)", background: "transparent" }
+                    }
                   >
                     Login
                   </button>
@@ -260,8 +269,16 @@ export function AuthPage({ callbackUrl, githubEnabled, googleEnabled, magicLinkE
                       setMessage("");
                     }}
                     className={`h-8 rounded-[14px] text-sm font-medium transition ${
-                      authMode === "signup" ? "bg-white text-[#05060a]" : "text-white/62 hover:bg-white/[0.05]"
+                      authMode === "signup" ? "" : ""
                     }`}
+                    style={
+                      authMode === "signup"
+                        ? {
+                            background: isLightTheme ? "var(--ui-text)" : "#dfd5d5",
+                            color: isLightTheme ? "#dfd5d5" : "#111111",
+                          }
+                        : { color: "var(--ui-text-muted)", background: "transparent" }
+                    }
                   >
                     Sign up
                   </button>

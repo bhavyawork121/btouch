@@ -20,6 +20,27 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                try {
+                  var key = "btouch-ui-theme";
+                  var stored = localStorage.getItem(key);
+                  var theme = stored === "light" || stored === "dark"
+                    ? stored
+                    : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+                  document.documentElement.setAttribute("data-ui-theme", theme);
+                  document.addEventListener("DOMContentLoaded", function () {
+                    document.body.setAttribute("data-ui-theme", theme);
+                  });
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body
         style={
           {
@@ -32,7 +53,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             "--font-geist-mono": 'var(--font-space-mono)',
           } as CSSProperties
         }
-        className="bg-[#0a0a0f] text-white antialiased"
+        className="antialiased"
       >
         <Providers>{children}</Providers>
         <Toaster richColors position="top-right" />

@@ -22,14 +22,14 @@ export function FunZonePicker({
   const tabs: Array<"emoji" | "quote" | "custom"> = ["emoji", "quote", "custom"];
 
   return (
-    <div className="rounded-[20px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-4">
+    <div className="theme-subpanel rounded-[20px] p-4">
       <div className="mb-4 flex gap-2">
         {tabs.map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => onChange({ type: tab, value: tab === type ? value : tab === "emoji" ? "🚀" : tab === "quote" ? quoteOptions[0] : "" })}
-            className={`rounded-full px-3 py-2 text-xs uppercase tracking-[0.14em] ${type === tab ? "bg-[var(--cream-base)] text-[#111]" : "border border-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.55)]"}`}
+            className={`rounded-full px-3 py-2 text-xs uppercase tracking-[0.14em] ${type === tab ? "bg-[var(--cream-base)] text-[#111]" : "theme-button-secondary theme-text-muted border"}`}
           >
             {tab}
           </button>
@@ -43,7 +43,7 @@ export function FunZonePicker({
               key={emoji}
               type="button"
               onClick={() => onChange({ type: "emoji", value: emoji })}
-              className={`rounded-[10px] border px-0 py-2 text-lg ${value === emoji ? "border-[var(--cream-base)] bg-[rgba(255,255,255,0.08)]" : "border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)]"}`}
+              className={`rounded-[10px] border px-0 py-2 text-lg ${value === emoji ? "border-[var(--cream-base)] bg-[color:var(--ui-button-secondary-hover)]" : "border-[color:var(--ui-panel-border)] bg-[color:var(--ui-button-secondary-bg)]"}`}
             >
               {emoji}
             </button>
@@ -58,7 +58,7 @@ export function FunZonePicker({
               key={quote}
               type="button"
               onClick={() => onChange({ type: "quote", value: quote })}
-              className={`w-full rounded-[12px] border px-3 py-3 text-left text-sm ${value === quote ? "border-[var(--cream-base)] bg-[rgba(255,255,255,0.08)] text-white" : "border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] text-[rgba(255,255,255,0.68)]"}`}
+              className={`w-full rounded-[12px] border px-3 py-3 text-left text-sm ${value === quote ? "border-[var(--cream-base)] bg-[color:var(--ui-button-secondary-hover)] text-[color:var(--ui-text)]" : "border-[color:var(--ui-panel-border)] bg-[color:var(--ui-button-secondary-bg)] text-[color:var(--ui-text-muted)]"}`}
             >
               “{quote}”
             </button>
@@ -71,7 +71,7 @@ export function FunZonePicker({
           value={value}
           maxLength={60}
           onChange={(event) => onChange({ type: "custom", value: event.target.value })}
-          className="w-full rounded-[14px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-4 py-3 text-sm text-white outline-none"
+          className="theme-input rounded-[14px] px-4 py-3 text-sm outline-none"
           placeholder="Write your own footer line"
         />
       ) : null}

@@ -25,9 +25,9 @@ export default async function CardPage({ params }: { params: { username: string 
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center bg-[var(--bg-page)] px-4 pt-7">
+    <main className="theme-shell theme-content flex min-h-screen flex-col items-center px-4 pt-7">
       <CardCase config={config} />
-      <p className="mt-4 text-[11px] text-[rgba(255,255,255,0.14)]">powered by btouch</p>
+      <p className="theme-text-faint mt-4 text-[11px]">powered by btouch</p>
     </main>
   );
 }

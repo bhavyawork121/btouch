@@ -87,7 +87,7 @@ export function PublicCardShell({ initialData, shareUrl, username, isOwner }: Pu
 
   return (
     <main
-      className="page-bg flex min-h-screen w-full flex-col items-center justify-center gap-8 px-6 py-12 page-enter"
+      className="theme-shell theme-content page-bg flex min-h-screen w-full flex-col items-center justify-center gap-8 px-6 py-12 page-enter"
       style={{ color: surface.foreground, paddingTop: isOwner ? 72 : 24, paddingBottom: isOwner ? 72 : 72 }}
     >
       {isOwner ? (
@@ -97,9 +97,9 @@ export function PublicCardShell({ initialData, shareUrl, username, isOwner }: Pu
             top: 0,
             left: 0,
             right: 0,
-            background: "rgba(6,8,16,0.92)",
+            background: "color-mix(in srgb, var(--ui-panel-bg) 92%, transparent)",
             backdropFilter: "blur(12px)",
-            borderBottom: "0.5px solid rgba(255,255,255,0.06)",
+            borderBottom: "0.5px solid var(--ui-panel-border)",
             padding: "10px 20px",
             display: "flex",
             alignItems: "center",
@@ -107,7 +107,7 @@ export function PublicCardShell({ initialData, shareUrl, username, isOwner }: Pu
             zIndex: 40,
           }}
         >
-          <span style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: "0.08em" }}>
+          <span style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: 9, color: "var(--ui-text-faint)", letterSpacing: "0.08em" }}>
             viewing your public card
           </span>
           <div style={{ display: "flex", gap: 8 }}>
@@ -117,11 +117,11 @@ export function PublicCardShell({ initialData, shareUrl, username, isOwner }: Pu
               style={{
                 fontFamily: "var(--font-space-mono), monospace",
                 fontSize: 9,
-                background: "rgba(255,255,255,0.04)",
-                border: "0.5px solid rgba(255,255,255,0.1)",
+                background: "var(--ui-button-secondary-bg)",
+                border: "0.5px solid var(--ui-panel-border-strong)",
                 borderRadius: 6,
                 padding: "5px 12px",
-                color: "rgba(255,255,255,0.4)",
+                color: "var(--ui-text-muted)",
                 cursor: "pointer",
                 letterSpacing: "0.06em",
               }}
@@ -155,9 +155,9 @@ export function PublicCardShell({ initialData, shareUrl, username, isOwner }: Pu
             bottom: 0,
             left: 0,
             right: 0,
-            background: "rgba(6,8,16,0.92)",
+            background: "color-mix(in srgb, var(--ui-panel-bg) 92%, transparent)",
             backdropFilter: "blur(12px)",
-            borderTop: "0.5px solid rgba(255,255,255,0.07)",
+            borderTop: "0.5px solid var(--ui-panel-border)",
             padding: "12px 20px",
             display: "flex",
             alignItems: "center",
@@ -179,7 +179,7 @@ export function PublicCardShell({ initialData, shareUrl, username, isOwner }: Pu
             >
               <span style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: 9, fontWeight: 700, color: "#fff" }}>b</span>
             </div>
-            <span style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: 9, color: "rgba(255,255,255,0.3)", letterSpacing: "0.06em" }}>
+            <span style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: 9, color: "var(--ui-text-soft)", letterSpacing: "0.06em" }}>
               made with btouch
             </span>
           </div>
@@ -224,12 +224,20 @@ export function PublicCardShell({ initialData, shareUrl, username, isOwner }: Pu
       </div>
 
       {error ? (
-        <div className="flex w-full max-w-xl items-center justify-between gap-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+        <div
+          className="flex w-full max-w-xl items-center justify-between gap-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm"
+          style={{ color: resolvedTheme === "light" ? "#92400e" : "#fef3c7" }}
+        >
           <p>{publicCopy.refreshFailed}</p>
           <button
             type="button"
             onClick={() => void refetch()}
-            className="rounded-full border border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
+            className="rounded-full px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] transition"
+            style={{
+              border: "1px solid var(--ui-panel-border-strong)",
+              color: "var(--ui-text)",
+              background: "var(--ui-button-secondary-bg)",
+            }}
           >
             Retry
           </button>
@@ -249,14 +257,19 @@ export function PublicCardShell({ initialData, shareUrl, username, isOwner }: Pu
                 type="button"
                 onClick={() => void retryPlatform(platform)}
                 disabled={retryingPlatform !== null}
-                className="rounded-full border border-white/10 px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-full px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  border: "1px solid var(--ui-panel-border-strong)",
+                  color: "var(--ui-text)",
+                  background: "var(--ui-button-secondary-bg)",
+                }}
               >
                 {retryingPlatform === platform ? `Retrying ${platform}` : `Retry ${platform}`}
                 {value?.status === "error" ? " error" : ""}
               </button>
             ))}
           </div>
-          {retryMessage ? <p className="mt-3 text-xs text-amber-200">{retryMessage}</p> : null}
+          {retryMessage ? <p className="mt-3 text-xs" style={{ color: resolvedTheme === "light" ? "#b45309" : "#fde68a" }}>{retryMessage}</p> : null}
         </div>
       ) : null}
 

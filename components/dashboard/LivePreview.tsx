@@ -11,7 +11,7 @@ export function LivePreview({
   onAvatarSelect: (value: string) => void;
 }) {
   return (
-    <aside className="sticky top-8 flex justify-center rounded-[28px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-6">
+    <aside className="theme-preview-shell sticky top-8 flex justify-center rounded-[28px] p-6">
       <CardCase config={config} editable onAvatarSelect={onAvatarSelect} />
     </aside>
   );
